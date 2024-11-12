@@ -27,7 +27,9 @@ dependencies {
 	implementation("io.jsonwebtoken:jjwt-api:0.11.5")
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5") // for JSON processing
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.0")
+
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.+")
+	runtimeOnly("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
 
 	implementation("aws.sdk.kotlin:dynamodb:1.2.28") { // DynamoDB SDK
 		exclude("com.squareup.okhttp3:okhttp")

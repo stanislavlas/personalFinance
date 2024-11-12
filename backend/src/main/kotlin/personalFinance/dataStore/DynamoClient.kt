@@ -6,172 +6,122 @@ import aws.sdk.kotlin.services.dynamodb.model.GetItemRequest
 import aws.sdk.kotlin.services.dynamodb.model.PutItemRequest
 import aws.sdk.kotlin.services.dynamodb.model.QueryRequest
 import aws.smithy.kotlin.runtime.net.url.Url
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import personalFinance.models.Transaction
 import personalFinance.models.User
 import java.time.LocalDate
-import java.time.ZoneId
 import java.util.*
 
 private const val USER_TABLE_NAME = "users"
 private const val TRANSACTION_TABLE_NAME = "transactions"
 
+private const val USERS_SECONDARY_INDEX_NAME = "emailIndex"
+
+private const val DATA_ATTRIBUTE = "data"
+private const val USER_ID_ATTRIBUTE = "userId"
+private const val EMAIL_ATTRIBUTE = "email"
+private const val DATE_ATTRIBUTE = "dateOfTransaction"
+
 @Component
 class DynamoClient(
     @Value("\${aws.region}") val awsRegion: String,
     @Value("\${aws.url}") val url: String,
+    private val objectMapper: ObjectMapper,
 ): IDataStoreClient {
     private val dynamoClient = DynamoDbClient {
         region = awsRegion
         endpointUrl = Url.parse(url)
     }
 
-    private val objectMapper = jacksonObjectMapper()
-
     override suspend fun getUserByEmail(email: String): User? {
-        val emailKey = "email"
-        val emailIndexName = "emailIndex"
-
         val queryRequest = QueryRequest {
             tableName = USER_TABLE_NAME
-            indexName = emailIndexName
-            keyConditionExpression = "$emailKey = :$emailIndexName"
+            indexName = USERS_SECONDARY_INDEX_NAME
+            keyConditionExpression = "$EMAIL_ATTRIBUTE = :$USERS_SECONDARY_INDEX_NAME"
             this.expressionAttributeValues = mapOf(
-                ":$emailIndexName" to AttributeValue.S(email),
+                ":$USERS_SECONDARY_INDEX_NAME" to AttributeValue.S(email),
             )
         }
 
-        val queryResponse = dynamoClient.query(queryRequest)
-
-        val items = queryResponse.items
-
+        val items = dynamoClient.query(queryRequest).items
         if (items.isNullOrEmpty()) {
             return null
         }
 
-        val data = items.first()["data"]?.asS()
-            ?: throw Exception("User with email: $email contains incorrect data")
-
+        val data = items.first()[DATA_ATTRIBUTE]?.asS() ?: throw Exception("User with email: $email contains incorrect data")
         return objectMapper.readValue(data)
     }
 
     override suspend fun getUserById(userId: UUID): User {
-        val userKey = mapOf(
-            "userId" to AttributeValue.S(userId.toString())
-        )
-
         val request = GetItemRequest {
             tableName = USER_TABLE_NAME
-            key = userKey
+            key = mapOf(USER_ID_ATTRIBUTE to AttributeValue.S(userId.toString()))
         }
 
-        val response = dynamoClient.getItem(request)
+        val item = dynamoClient.getItem(request).item
 
-        if (!response.item.isNullOrEmpty()) {
+        if (item.isNullOrEmpty()) {
             throw Exception("User with id: $userId does not exists")
         }
 
-        val data = response.item?.get("data")
-            ?: throw Exception("User with id: $userId contains incorrect data")
-
-        return objectMapper.readValue(data.toString())
+        val data = item[DATA_ATTRIBUTE]?.asS() ?: throw Exception("User with id: $userId contains incorrect data")
+        return objectMapper.readValue(data)
     }
 
     override suspend fun putUser(user: User) {
-        val userString = objectMapper.writeValueAsString(user)
-        val itemValues = mapOf(
-            "userId" to AttributeValue.S(user.userId.toString()),
-            "email" to AttributeValue.S(user.email),
-            "data" to AttributeValue.S(userString)
-        )
-
         val request = PutItemRequest {
             tableName = USER_TABLE_NAME
-            item = itemValues
+            item = mapOf(
+                USER_ID_ATTRIBUTE to AttributeValue.S(user.userId.toString()),
+                EMAIL_ATTRIBUTE to AttributeValue.S(user.email),
+                DATA_ATTRIBUTE to AttributeValue.S(objectMapper.writeValueAsString(user))
+            )
         }
 
         dynamoClient.putItem(request)
     }
 
-    override suspend fun getTransactions(userId: UUID, date: LocalDate): List<Transaction> {
-        val epochTime = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val userKey = mapOf(
-            "userId" to AttributeValue.S(userId.toString()),
-            "date" to AttributeValue.N(epochTime.toString())
-        )
-
-        val request = GetItemRequest {
+    override suspend fun getTransactions(userId: UUID, fromDate: LocalDate, toDate: LocalDate): List<Transaction> {
+        val queryRequest = QueryRequest {
             tableName = TRANSACTION_TABLE_NAME
-            key = userKey
+            keyConditionExpression = "$USER_ID_ATTRIBUTE = :userId AND $DATE_ATTRIBUTE BETWEEN :fromDate AND :toDate"
+            this.expressionAttributeValues = mapOf(
+                ":userId" to AttributeValue.S(userId.toString()),
+                ":fromDate" to AttributeValue.S(fromDate.toString()),
+                ":toDate" to AttributeValue.S(toDate.toString()),
+            )
         }
 
-        val response = dynamoClient.getItem(request)
-
-        if (response.item.isNullOrEmpty()) {
+        val items = dynamoClient.query(queryRequest).items
+        if (items.isNullOrEmpty()) {
             return emptyList()
         }
 
-        val data = response.item?.get("data") ?: ""
+        val transactions = mutableListOf<Transaction>()
+        items.forEach { item ->
+            val data = item[DATA_ATTRIBUTE]?.asS()?.let {
+                objectMapper.readValue<List<Transaction>>(it)
+            } ?: emptyList()
 
-        return objectMapper.readValue(data.toString())
+            transactions.addAll(data)
+        }
+
+        return transactions
     }
 
-    override suspend fun putTransaction(user: User, transaction: Transaction) {
-        val transactionString = objectMapper.writeValueAsString(transaction)
-
-        val epochDate = transaction.date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-        val itemValues = mapOf(
-            "userId" to AttributeValue.S(user.userId.toString()),
-            "date" to AttributeValue.N(epochDate.toString()),
-            "data" to AttributeValue.S(transactionString)
-        )
-
+    override suspend fun putTransactions(userId: UUID, date: LocalDate, transactions: List<Transaction>) {
         val request = PutItemRequest {
             tableName = TRANSACTION_TABLE_NAME
-            item = itemValues
+            item = mapOf(
+                USER_ID_ATTRIBUTE to AttributeValue.S(userId.toString()),
+                DATE_ATTRIBUTE to AttributeValue.S(date.toString()),
+                DATA_ATTRIBUTE to AttributeValue.S(objectMapper.writeValueAsString(transactions))
+            )
         }
 
         dynamoClient.putItem(request)
-    }
-
-    override suspend fun putTransactions(user: User, transactions: List<Transaction>) {
-//        val requestItems = transactions.map { transaction ->
-//
-//            val transactionString = objectMapper.writeValueAsString(transaction)
-//            val epochDate = transaction.date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-//
-//            val itemValues = mapOf(
-//                "userId" to AttributeValue.builder().s(user.userId.toString()).build(),
-//                "date" to AttributeValue.builder().n(epochDate.toString()).build(),
-//                "data" to AttributeValue.builder().s(transactionString).build()
-//            )
-//
-//            putRequest.withItem(itemValues)
-//            WriteRequest().withPutRequest(putRequest)
-//        }
-//
-//
-//
-//        val writeRequests = transactions.map {
-//            WriteRequest(
-//
-//            )
-//        }
-//
-//        val itemValues = mapOf(
-//            "userId" to AttributeValue.builder().s(user.userId.toString()).build(),
-//            "date" to AttributeValue.builder().n(epochDate.toString()).build(),
-//            "data" to AttributeValue.builder().s(transactionString).build()
-//        )
-//
-//        val batchWriteItemRequest = BatchWriteItemRequest().withRequestItems(
-//            requestItems = itemValues,
-//        )
-//
-//        dynamoClient.putItem(request)
-//        dynamoClient.batchWriteItem()
     }
 }

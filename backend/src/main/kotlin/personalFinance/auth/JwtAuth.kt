@@ -25,7 +25,7 @@ class JwtAuth(
         return Jwts.builder()
             .setSubject(userId.toString())
             .setIssuedAt(now.toDate())
-            .setExpiration(now.plusDays(12).toDate()) // 12 hours
+            .setExpiration(now.plusHours(12).toDate()) // 12 hours
             .signWith(getSigningKey(), SignatureAlgorithm.HS256)
             .compact()
     }

@@ -9,7 +9,6 @@ interface IDataStoreClient {
     suspend fun putUser(user: User)
     suspend fun getUserByEmail(email: String): User?
     suspend fun getUserById(userId: UUID): User
-    suspend fun getTransactions(userId: UUID, date: LocalDate): List<Transaction>
-    suspend fun putTransaction(user: User, transaction: Transaction)
-    suspend fun putTransactions(user: User, transactions: List<Transaction>)
+    suspend fun getTransactions(userId: UUID, fromDate: LocalDate, toDate: LocalDate): List<Transaction>
+    suspend fun putTransactions(userId: UUID, date: LocalDate, transactions: List<Transaction>)
 }

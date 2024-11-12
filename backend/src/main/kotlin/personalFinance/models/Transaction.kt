@@ -5,6 +5,7 @@ import java.time.LocalDate
 
 data class Transaction(
     val amount: Amount,
+    val category: Category,
     val date: LocalDate,
     val note: String,
     val type: TransactionType,
@@ -17,25 +18,25 @@ data class Amount(
     fun plus(value: BigDecimal) = this.value.plus(value)
 }
 
-enum class Category(val value: String){
-    FOOD_VOUCHERS("Food Vouchers"),
-    FREE_TIME_VOUCHERS("Free Time Vouchers"),
-    SALARY("Salary"),
+enum class Category{
+    FOOD_VOUCHERS,
+    FREE_TIME_VOUCHERS,
+    SALARY,
 
 
-    CLOTHING("Clothing"),
-    EATING_OUT("Eating out"),
-    ELECTRICITY("Electricity"),
-    ENTERTAINMENT("Entertainment"),
-    GROCERIES("Groceries"),
-    GYM("Gym"),
-    HOUSEHOLD("HOUSEHOLD"),
-    INTERNET("INTERNET"),
-    OTHER("OTHER"),
-    PHONE("PHONE"),
-    RENT("RENT"),
-    TECHNOLOGY("TECHNOLOGY"),
-    TRANSPORT("TRANSPORT"),
+    CLOTHING,
+    EATING_OUT,
+    ELECTRICITY,
+    ENTERTAINMENT,
+    GROCERIES,
+    GYM,
+    HOUSEHOLD,
+    INTERNET,
+    OTHER,
+    PHONE,
+    RENT,
+    TECHNOLOGY,
+    TRANSPORT,
 }
 
 enum class TransactionType{
