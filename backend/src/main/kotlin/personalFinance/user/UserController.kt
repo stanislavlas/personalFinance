@@ -3,7 +3,7 @@ package personalFinance.user
 import org.springframework.web.bind.annotation.*
 import personalFinance.auth.JwtAuth
 import personalFinance.common.getJWT
-import personalFinance.models.User
+import personalFinance.models.internal.User
 
 @RestController
 @RequestMapping("/api/user")

@@ -1,7 +1,7 @@
 package personalFinance.dataStore
 
-import personalFinance.models.Transaction
-import personalFinance.models.User
+import personalFinance.models.internal.Transaction
+import personalFinance.models.internal.User
 import java.time.LocalDate
 import java.util.*
 

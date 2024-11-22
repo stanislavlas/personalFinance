@@ -5,7 +5,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import personalFinance.dataStore.IDataStoreClient
 import personalFinance.models.Currency
-import personalFinance.models.User
+import personalFinance.models.internal.User
 import java.util.UUID
 
 @Service

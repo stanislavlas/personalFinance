@@ -10,8 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import personalFinance.models.Transaction
-import personalFinance.models.User
+import personalFinance.models.internal.Transaction
+import personalFinance.models.internal.User
 import java.time.LocalDate
 import java.util.*
 

@@ -1,5 +1,6 @@
-package personalFinance.models
+package personalFinance.models.internal
 
+import personalFinance.models.Currency
 import java.util.UUID
 
 data class User(
