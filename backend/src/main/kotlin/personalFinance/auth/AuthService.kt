@@ -5,6 +5,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import personalFinance.dataStore.IDataStoreClient
 import personalFinance.models.Currency
+import personalFinance.models.api.AuthUserResponse
 import personalFinance.models.internal.User
 import java.util.UUID
 
@@ -14,7 +15,7 @@ class AuthService(
     private val dataStore: IDataStoreClient,
     private val passwordEncoder: PasswordEncoder,
 ) {
-    fun getJwtForUser(email: String, password: String): String {
+    fun getUserWithJwt(email: String, password: String): AuthUserResponse {
         val user = runBlocking { dataStore.getUserByEmail(email = email) }
             ?: throw Exception("User with email $email does not exist")
 
@@ -27,7 +28,11 @@ class AuthService(
             throw Exception("Incorrect credentials")
         }
 
-        return jwtAuth.generateJWT(user.userId)
+        return AuthUserResponse(
+            jwt = jwtAuth.generateJWT(user.userId),
+            user = user.toApi(),
+            success = true,
+        )
     }
 
     fun createUser(

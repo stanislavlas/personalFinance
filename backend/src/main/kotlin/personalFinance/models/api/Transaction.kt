@@ -5,8 +5,8 @@ import personalFinance.models.Amount
 import personalFinance.models.Category
 import personalFinance.models.TransactionType
 import personalFinance.models.internal.Transaction
-import personalFinance.models.internal.TransactionsOverview.Transactions
 import java.time.LocalDate
+import java.util.*
 
 // PutTransactions
 data class PutTransactionsRequest(
@@ -17,13 +17,16 @@ data class PutTransactionsRequest(
         val amount: Amount,
         val category: Category,
         val date: LocalDate,
+        val name: String,
         val note: String,
         val type: TransactionType,
     ) {
-        fun toInternal() = personalFinance.models.internal.Transaction(
+        fun toInternal() = Transaction(
+            id = UUID.randomUUID(),
             amount = this.amount,
             category = this.category,
             date = this.date,
+            name = this.name,
             note = this.note,
             type = this.type,
         )
@@ -52,9 +55,11 @@ data class GetTransactionsResponse(
     )
 
     data class Transaction(
+        val id: UUID,
         val amount: Amount,
         val category: Category,
         val date: LocalDate,
+        val name: String,
         val note: String,
         val type: TransactionType,
     )

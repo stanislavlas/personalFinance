@@ -18,7 +18,7 @@ class TransactionController(
     fun addTransactions(
         @RequestHeader("Authorization") authHeader: String,
         @RequestBody request: PutTransactionsRequest,
-    ): List<personalFinance.models.internal.Transaction> {
+    ): List<GetTransactionsResponse.Transaction> {
         val jwt = authHeader.getJWT()
 
         val transactionsModel = request.transactions.map { it.toInternal() }
@@ -28,10 +28,10 @@ class TransactionController(
             transactions = transactionsModel,
         )
 
-        return transactionsModel
+        return transactionsModel.map { it.toAPI() }
     }
 
-    @GetMapping("/get")
+    @PostMapping("/get")
     fun getTransaction(
         @RequestHeader("Authorization") authHeader: String,
         @RequestBody request: GetTransactionsRequest,

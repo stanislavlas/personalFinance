@@ -6,18 +6,23 @@ import personalFinance.models.TransactionType
 import personalFinance.models.api.GetTransactionsResponse
 import personalFinance.models.api.PutTransactionsRequest
 import java.time.LocalDate
+import java.util.UUID
 
 data class Transaction(
+    val id: UUID,
     val amount: Amount,
     val category: Category,
     val date: LocalDate,
+    val name: String,
     val note: String,
     val type: TransactionType,
 ) {
     fun toAPI() = GetTransactionsResponse.Transaction(
+        id = this.id,
         amount = this.amount,
         category = this.category,
         date = this.date,
+        name = this.name,
         note = this.note,
         type = this.type,
     )

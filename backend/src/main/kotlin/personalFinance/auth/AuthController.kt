@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import personalFinance.models.Currency
+import personalFinance.models.api.AuthUserResponse
 
 @RestController
 @RequestMapping("/api/auth")
@@ -14,13 +15,13 @@ class AuthController(
     private val authenticationManager: AuthenticationManager,
 ) {
     @PostMapping("/login")
-    fun loginAndGetJwt(@RequestBody authRequest: AuthRequest): AuthResponse {
-        val jwt = authService.getJwtForUser(
+    fun loginAndGetJwt(@RequestBody authRequest: AuthRequest): AuthUserResponse {
+        val user = authService.getUserWithJwt(
             email = authRequest.email,
             password = authRequest.password,
         )
 
-        return AuthResponse(jwt)
+        return user
     }
 
     @PostMapping("/create")
