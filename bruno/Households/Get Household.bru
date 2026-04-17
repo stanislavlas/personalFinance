@@ -1,0 +1,19 @@
+meta {
+  name: Get Household
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/households/:householdId
+  body: none
+  auth: bearer
+}
+
+params:path {
+  householdId: REPLACE_WITH_HOUSEHOLD_ID
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

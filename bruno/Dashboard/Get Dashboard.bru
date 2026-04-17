@@ -1,0 +1,21 @@
+meta {
+  name: Get Dashboard
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/dashboard?fromDate=2026-04-01&toDate=2026-04-30
+  body: none
+  auth: bearer
+}
+
+params:query {
+  fromDate: 2026-04-01
+  toDate: 2026-04-30
+  ~householdId: OPTIONAL_HOUSEHOLD_ID
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

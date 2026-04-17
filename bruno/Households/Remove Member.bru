@@ -1,0 +1,20 @@
+meta {
+  name: Remove Member
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/households/:householdId/members/:userId
+  body: none
+  auth: bearer
+}
+
+params:path {
+  householdId: REPLACE_WITH_HOUSEHOLD_ID
+  userId: REPLACE_WITH_USER_ID
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

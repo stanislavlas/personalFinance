@@ -1,0 +1,25 @@
+meta {
+  name: Add Member
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/households/:householdId/members
+  body: json
+  auth: bearer
+}
+
+params:path {
+  householdId: REPLACE_WITH_HOUSEHOLD_ID
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "email": "member@example.com"
+  }
+}

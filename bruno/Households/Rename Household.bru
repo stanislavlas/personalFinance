@@ -1,0 +1,25 @@
+meta {
+  name: Rename Household
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/api/households/:householdId
+  body: json
+  auth: bearer
+}
+
+params:path {
+  householdId: REPLACE_WITH_HOUSEHOLD_ID
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Updated Family Name"
+  }
+}
