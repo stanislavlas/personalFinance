@@ -31,11 +31,17 @@ class RequestResponseLoggingFilter : Filter {
         val httpRequest = request as HttpServletRequest
         val httpResponse = response as HttpServletResponse
 
-        logger.info("REQUEST: ${httpRequest.method} ${httpRequest.requestURI}")
-        logger.info("Headers: ${httpRequest.headerNames.toList().joinToString { "$it: ${httpRequest.getHeader(it)}" }}")
+        val startTime = System.currentTimeMillis()
+        logger.info("→ ${httpRequest.method} ${httpRequest.requestURI}")
 
-        chain.doFilter(request, response)
-
-        logger.info("RESPONSE: Status ${httpResponse.status}")
+        try {
+            chain.doFilter(request, response)
+        } catch (ex: Exception) {
+            logger.error("Error processing request: ${httpRequest.method} ${httpRequest.requestURI}", ex)
+            throw ex
+        } finally {
+            val duration = System.currentTimeMillis() - startTime
+            logger.info("← ${httpRequest.method} ${httpRequest.requestURI} - Status ${httpResponse.status} (${duration}ms)")
+        }
     }
 }
