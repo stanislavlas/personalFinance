@@ -1,88 +1,283 @@
-# Run locally
+# Backend - Personal Finance API
 
-## Create localstack
+Kotlin Spring Boot REST API with DynamoDB (via LocalStack for local development).
 
-```
-docker run --name localstack -d -p 4566:4566 localstack/localstack
-```
+## Quick Start
 
-## Users table
-### Create
-```
-aws --endpoint-url=http://localhost:4566 dynamodb create-table --table-name users \
-  --key-schema \
-    AttributeName=userId,KeyType=HASH \
-  --attribute-definitions \
-    AttributeName=userId,AttributeType=S \
-    AttributeName=email,AttributeType=S \
-  --billing-mode PAY_PER_REQUEST --region us-west-2 \
-  --global-secondary-indexes '[
-    {
-      "IndexName": "emailIndex",
-      "KeySchema": [
-        {
-          "AttributeName": "email",
-          "KeyType": "HASH"
-        }
-      ],
-      "Projection": {
-        "ProjectionType": "ALL"
-      }
-    }
-  ]'
-```
-### Describe
-```
-aws --endpoint-url=http://localhost:4566 dynamodb describe-table --table-name users
+### 1. Start LocalStack
+
+```bash
+# From project root
+docker-compose up -d
 ```
 
-### Scan
-```
-aws --endpoint-url=http://localhost:4566 dynamodb scan --table-name users
+### 2. Run Backend
+
+**Linux/macOS:**
+```bash
+./gradlew bootRun
 ```
 
-### Delete
-```
-aws --endpoint-url=http://localhost:4566 dynamodb delete-table --table-name users
-```
-
-### Get
-```
-aws --endpoint-url=http://localhost:4566 dynamodb get-item --table-name users --key '{"username": {"S": "test"}}'
+**Windows (WSL2):**
+```bash
+chmod +x gradlew
+./gradlew bootRun
 ```
 
-## Transaction table
-### Create
-```
-aws --endpoint-url=http://localhost:4566 dynamodb create-table --table-name transactions \
-  --key-schema \
-    AttributeName=userId,KeyType=HASH \
-    AttributeName=dateOfTransaction,KeyType=SORT \
-  --attribute-definitions \
-    AttributeName=userId,AttributeType=S \
-    AttributeName=dateOfTransaction,AttributeType=S \
-  --billing-mode PAY_PER_REQUEST --region us-west-2
+Backend runs on `http://localhost:8080`
+
+## Configuration
+
+Edit `src/main/resources/application.properties`:
+
+```properties
+# Server
+server.port=8080
+
+# AWS/LocalStack
+aws.region=eu-central-1
+aws.url=http://localhost:4566
+
+# JWT
+jwt.secret=your-secret-key-change-this-in-production-minimum-256-bits
+jwt.expiration=900000
 ```
 
-### Describe
-```
-aws --endpoint-url=http://localhost:4566 dynamodb describe-table --table-name transactions
+**For Windows WSL2:**
+- LocalStack URL stays `http://localhost:4566` (Docker Desktop handles WSL integration)
+- To access from mobile app, see WSL2 port forwarding in main README
+
+## Build & Test
+
+```bash
+# Build
+./gradlew build
+
+# Run tests
+./gradlew test
+
+# Clean build
+./gradlew clean build
+
+# Build JAR for production
+./gradlew bootJar
+# Output: build/libs/backend-0.0.1-SNAPSHOT.jar
 ```
 
-### Scan
-```
-aws --endpoint-url=http://localhost:4566 dynamodb scan --table-name transactions
+## Database Scripts
+
+Initialize DynamoDB tables (runs automatically on `docker-compose up`):
+
+```bash
+# View tables
+docker exec -it localstack aws dynamodb list-tables \
+  --endpoint-url http://localhost:4566 \
+  --region eu-central-1
+
+# Scan users table
+docker exec -it localstack aws dynamodb scan \
+  --table-name users \
+  --endpoint-url http://localhost:4566 \
+  --region eu-central-1
+
+# Delete all items (useful for testing)
+docker exec -it localstack bash
+# Inside container:
+aws dynamodb scan --table-name users --endpoint-url http://localhost:4566 --region eu-central-1 | \
+  jq -r '.Items[] | "{\\"userId\\": {\\"S\\": \\"" + .userId.S + "\\"}}"' | \
+  xargs -I {} aws dynamodb delete-item --table-name users --key '{}' --endpoint-url http://localhost:4566 --region eu-central-1
 ```
 
-### Delete
-```
-aws --endpoint-url=http://localhost:4566 dynamodb delete-table --table-name transactions
+## API Endpoints
+
+Base URL: `http://localhost:8080`
+
+### Authentication
+- `POST /api/auth/create` - Register
+- `POST /api/auth/login` - Login
+- `POST /api/auth/refresh` - Refresh token
+- `POST /api/auth/logout` - Logout
+- `DELETE /api/auth/account` - Delete account
+- `PUT /api/auth/password` - Change password
+
+### Categories
+- `GET /api/categories` - List categories (auto-seeds 26 defaults on first access)
+- `POST /api/categories` - Create custom category
+- `DELETE /api/categories/:id` - Delete category
+
+### Entries (Transactions)
+- `GET /api/entries?yearMonth=YYYY-MM&householdId=xxx` - List entries
+- `POST /api/entries` - Create entry
+- `PUT /api/entries/:id` - Update entry
+- `DELETE /api/entries/:id` - Delete entry
+
+### Households
+- `POST /api/households` - Create household
+- `GET /api/households/:id` - Get household
+- `PUT /api/households/:id` - Rename household
+- `DELETE /api/households/:id` - Delete household
+- `POST /api/households/:id/members` - Add member
+- `DELETE /api/households/:id/members/:uid` - Remove member
+- `POST /api/households/:id/leave` - Leave household
+
+### Dashboard
+- `GET /api/dashboard?fromDate=YYYY-MM-DD&toDate=YYYY-MM-DD&householdId=xxx` - Get analytics
+
+## Environment Variables
+
+For production, set these as environment variables instead of application.properties:
+
+```bash
+export AWS_REGION=eu-central-1
+export AWS_URL=https://dynamodb.eu-central-1.amazonaws.com
+export JWT_SECRET=<256-bit-random-string>
+export SERVER_PORT=8080
 ```
 
-### Get
-```
-aws --endpoint-url=http://localhost:4566 dynamodb get-item --table-name transactions --key '{"username": {"S": "test"}}'
+## Windows WSL2 Notes
+
+### Finding WSL IP
+
+```bash
+# Inside WSL
+hostname -I | awk '{print $1}'
+# Example output: 172.20.10.5
 ```
 
-### DynamoDB reference
-https://docs.aws.amazon.com/cli/latest/reference/dynamodb/create-table.html
+### Port Forwarding (for mobile access)
+
+**In Windows PowerShell (Administrator):**
+
+```powershell
+# Get WSL IP
+wsl hostname -I
+
+# Forward port 8080
+netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=8080 connectaddress=172.20.10.5
+
+# Allow firewall
+New-NetFirewallRule -DisplayName "WSL Backend" -Direction Inbound -LocalPort 8080 -Protocol TCP -Action Allow
+
+# View forwards
+netsh interface portproxy show all
+
+# Delete forward (when WSL IP changes)
+netsh interface portproxy delete v4tov4 listenport=8080 listenaddress=0.0.0.0
+```
+
+### WSL IP Changes on Restart
+
+WSL IP changes every time you restart WSL or Windows. Update port forward after restart:
+
+```powershell
+# Get new IP
+wsl hostname -I
+
+# Delete old forward
+netsh interface portproxy delete v4tov4 listenport=8080 listenaddress=0.0.0.0
+
+# Add new forward with new IP
+netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=8080 connectaddress=<NEW_WSL_IP>
+```
+
+## Logs
+
+Application logs include:
+- Request/response logging (with timing)
+- Exception logging with stack traces
+- DynamoDB operation logs
+
+View logs:
+```bash
+# While running
+./gradlew bootRun
+
+# From JAR
+java -jar build/libs/backend-0.0.1-SNAPSHOT.jar
+
+# With debug level
+java -jar build/libs/backend-0.0.1-SNAPSHOT.jar --logging.level.personalFinance=DEBUG
+```
+
+## Testing with Bruno
+
+See `/bruno` folder in project root for complete API collection.
+
+1. Install Bruno: https://www.usebruno.com/
+2. Open collection: `/path/to/personalFinance/bruno`
+3. Select "Local" environment
+4. Run "Auth > Register" to create test account
+5. Tokens are auto-saved to environment variables
+6. Test other endpoints
+
+## Common Issues
+
+### Port 8080 already in use
+
+```bash
+# Find process using port 8080
+lsof -i :8080
+
+# Kill it
+kill -9 <PID>
+
+# Or change port in application.properties
+server.port=8081
+```
+
+### LocalStack not accessible
+
+```bash
+# Check LocalStack is running
+docker ps | grep localstack
+
+# Restart LocalStack
+docker-compose restart localstack
+
+# View logs
+docker-compose logs localstack
+```
+
+### Tables not created
+
+```bash
+# Recreate tables
+docker-compose down
+docker-compose up -d
+
+# Check init script logs
+docker-compose logs localstack | grep "Creating table"
+```
+
+### Gradle permission denied (WSL)
+
+```bash
+chmod +x gradlew
+```
+
+## Production Deployment
+
+1. **Update JWT secret** to 256+ bit random string
+2. **Change AWS URL** to real DynamoDB endpoint
+3. **Set up IAM credentials**:
+   ```bash
+   aws configure
+   # OR use IAM role for EC2/ECS
+   ```
+4. **Build production JAR**:
+   ```bash
+   ./gradlew bootJar
+   ```
+5. **Run**:
+   ```bash
+   java -jar build/libs/backend-0.0.1-SNAPSHOT.jar
+   ```
+
+## Dependencies
+
+- Kotlin 1.9.25
+- Spring Boot 3.3.4
+- AWS SDK for Kotlin (DynamoDB)
+- jjwt 0.11.5 (JWT)
+- Jackson (JSON)
+- BCrypt (password hashing)
