@@ -22,29 +22,6 @@ data class Amount(
     }
 }
 
-enum class Category{
-    FOOD_VOUCHERS,
-    FREE_TIME_VOUCHERS,
-    SALARY,
-
-    CLOTHING,
-    EATING_OUT,
-    ELECTRICITY,
-    ENTERTAINMENT,
-    GROCERIES,
-    GYM,
-    HOUSEHOLD,
-    INTERNET,
-    OTHER,
-    PHONE,
-    RENT,
-    TECHNOLOGY,
-    TRANSPORT,
-
-    @JsonEnumDefaultValue
-    UNSUPPORTED,
-}
-
 enum class TransactionType{
     EXPENSE,
     INCOME,
