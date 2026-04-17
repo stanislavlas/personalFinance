@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=dynamodb
+      - DEFAULT_REGION=us-west-2
+      - AWS_DEFAULT_REGION=us-west-2
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - ./backend/scripts:/etc/localstack/init/ready.d
+      - localstack_data:/var/lib/localstack
+    networks:
+      - personalfinance-network
+
+volumes:
+  localstack_data:
+
+networks:
+  personalfinance-network:
+    driver: bridge
