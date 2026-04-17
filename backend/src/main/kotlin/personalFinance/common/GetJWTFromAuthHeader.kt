@@ -7,3 +7,6 @@ fun String?.getJWT(): String {
 
     throw Exception("Incorrect authentication header")
 }
+
+// Alias for compatibility
+fun GetJWTFromAuthHeader(authHeader: String): String = authHeader.getJWT()

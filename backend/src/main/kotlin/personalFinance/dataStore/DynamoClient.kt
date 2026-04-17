@@ -10,20 +10,14 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
-import personalFinance.models.internal.Transaction
 import personalFinance.models.internal.User
-import java.time.LocalDate
 import java.util.*
 
 private const val USER_TABLE_NAME = "users"
-private const val TRANSACTION_TABLE_NAME = "transactions"
-
-private const val USERS_SECONDARY_INDEX_NAME = "emailIndex"
-
+private const val USERS_SECONDARY_INDEX_NAME = "email-index"
 private const val DATA_ATTRIBUTE = "data"
 private const val USER_ID_ATTRIBUTE = "userId"
 private const val EMAIL_ATTRIBUTE = "email"
-private const val DATE_ATTRIBUTE = "dateOfTransaction"
 
 @Component
 class DynamoClient(
@@ -40,9 +34,9 @@ class DynamoClient(
         val queryRequest = QueryRequest {
             tableName = USER_TABLE_NAME
             indexName = USERS_SECONDARY_INDEX_NAME
-            keyConditionExpression = "$EMAIL_ATTRIBUTE = :$USERS_SECONDARY_INDEX_NAME"
+            keyConditionExpression = "$EMAIL_ATTRIBUTE = :emailValue"
             this.expressionAttributeValues = mapOf(
-                ":$USERS_SECONDARY_INDEX_NAME" to AttributeValue.S(email),
+                ":emailValue" to AttributeValue.S(email),
             )
         }
 
@@ -78,47 +72,6 @@ class DynamoClient(
                 USER_ID_ATTRIBUTE to AttributeValue.S(user.userId.toString()),
                 EMAIL_ATTRIBUTE to AttributeValue.S(user.email),
                 DATA_ATTRIBUTE to AttributeValue.S(objectMapper.writeValueAsString(user))
-            )
-        }
-
-        dynamoClient.putItem(request)
-    }
-
-    override suspend fun getTransactions(userId: UUID, fromDate: LocalDate, toDate: LocalDate): List<Transaction> {
-        val queryRequest = QueryRequest {
-            tableName = TRANSACTION_TABLE_NAME
-            keyConditionExpression = "$USER_ID_ATTRIBUTE = :userId AND $DATE_ATTRIBUTE BETWEEN :fromDate AND :toDate"
-            this.expressionAttributeValues = mapOf(
-                ":userId" to AttributeValue.S(userId.toString()),
-                ":fromDate" to AttributeValue.S(fromDate.toString()),
-                ":toDate" to AttributeValue.S(toDate.toString()),
-            )
-        }
-
-        val items = dynamoClient.query(queryRequest).items
-        if (items.isNullOrEmpty()) {
-            return emptyList()
-        }
-
-        val transactions = mutableListOf<Transaction>()
-        items.forEach { item ->
-            val data = item[DATA_ATTRIBUTE]?.asS()?.let {
-                objectMapper.readValue<List<Transaction>>(it)
-            } ?: emptyList()
-
-            transactions.addAll(data)
-        }
-
-        return transactions
-    }
-
-    override suspend fun putTransactions(userId: UUID, date: LocalDate, transactions: List<Transaction>) {
-        val request = PutItemRequest {
-            tableName = TRANSACTION_TABLE_NAME
-            item = mapOf(
-                USER_ID_ATTRIBUTE to AttributeValue.S(userId.toString()),
-                DATE_ATTRIBUTE to AttributeValue.S(date.toString()),
-                DATA_ATTRIBUTE to AttributeValue.S(objectMapper.writeValueAsString(transactions))
             )
         }
 
