@@ -86,7 +86,8 @@ class EntryRepository(
             indexName = "userId-date-index"
 
             if (fromDate != null && toDate != null) {
-                keyConditionExpression = "$USER_ID_ATTRIBUTE = :userId AND $DATE_ATTRIBUTE BETWEEN :fromDate AND :toDate"
+                keyConditionExpression = "$USER_ID_ATTRIBUTE = :userId AND #dateAttr BETWEEN :fromDate AND :toDate"
+                expressionAttributeNames = mapOf("#dateAttr" to DATE_ATTRIBUTE)
                 expressionAttributeValues = mapOf(
                     ":userId" to AttributeValue.S(userId.toString()),
                     ":fromDate" to AttributeValue.S(fromDate.toString()),
@@ -110,7 +111,8 @@ class EntryRepository(
             indexName = "householdId-date-index"
 
             if (fromDate != null && toDate != null) {
-                keyConditionExpression = "$HOUSEHOLD_ID_ATTRIBUTE = :householdId AND $DATE_ATTRIBUTE BETWEEN :fromDate AND :toDate"
+                keyConditionExpression = "$HOUSEHOLD_ID_ATTRIBUTE = :householdId AND #dateAttr BETWEEN :fromDate AND :toDate"
+                expressionAttributeNames = mapOf("#dateAttr" to DATE_ATTRIBUTE)
                 expressionAttributeValues = mapOf(
                     ":householdId" to AttributeValue.S(householdId.toString()),
                     ":fromDate" to AttributeValue.S(fromDate.toString()),
