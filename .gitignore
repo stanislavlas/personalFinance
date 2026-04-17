@@ -1,26 +1,124 @@
-# IDEs
+# ===========================
+# IDEs and Editors
+# ===========================
 .idea/
 .vscode/
 *.iml
 *.iws
 *.ipr
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# OS
-.DS_Store
-Thumbs.db
+# ===========================
+# Backend (Kotlin/Gradle)
+# ===========================
+backend/.gradle/
+backend/build/
+backend/out/
+backend/bin/
+backend/.apt_generated
+backend/.classpath
+backend/.factorypath
+backend/.project
+backend/.settings
+backend/.springBeans
+backend/.sts4-cache
+backend/.kotlin
+!backend/gradle/wrapper/gradle-wrapper.jar
+!backend/**/src/main/**/build/
+!backend/**/src/test/**/build/
+!backend/**/src/main/**/bin/
+!backend/**/src/test/**/bin/
+!backend/**/src/main/**/out/
+!backend/**/src/test/**/out/
 
-# Environment
-.env.local
-.env.*.local
+# Backend NetBeans
+backend/nbproject/private/
+backend/nbbuild/
+backend/dist/
+backend/nbdist/
+backend/.nb-gradle/
 
-# Logs
-*.log
+# ===========================
+# Mobile (Expo/React Native)
+# ===========================
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/.metro-health-check*
+
+# Native
+mobile/*.orig.*
+mobile/*.jks
+mobile/*.p8
+mobile/*.p12
+mobile/*.key
+mobile/*.mobileprovision
+
+# ===========================
+# Frontend (Old Vite - if present)
+# ===========================
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+
+# ===========================
+# Node.js / NPM / Yarn
+# ===========================
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log
 
-# Temporary files
+# ===========================
+# OS Files
+# ===========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===========================
+# Environment Files
+# ===========================
+.env.local
+.env.*.local
+
+# Keep mobile .env for local config
+!mobile/.env
+
+# ===========================
+# Logs
+# ===========================
+*.log
+logs/
+
+# ===========================
+# Temporary Files
+# ===========================
 *.tmp
 *.temp
 *.swp
 *~
+.cache/
+
+# ===========================
+# Docker
+# ===========================
+.docker/
+
+# ===========================
+# IDE-specific (IntelliJ workspace)
+# ===========================
+.idea/workspace.xml
+.idea/shelf/
+.idea/queries/
+.idea/dataSources/
+.idea/dataSources.local.xml
+.idea/httpRequests/
