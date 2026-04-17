@@ -4,8 +4,8 @@ import personalFinance.models.Currency
 import java.util.*
 
 data class AuthUserResponse(
-    val jwt: String,
-    val success: Boolean,
+    val accessToken: String,
+    val refreshToken: String,
     val user: User,
 )
 

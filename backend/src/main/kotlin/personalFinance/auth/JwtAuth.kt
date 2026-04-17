@@ -25,7 +25,7 @@ class JwtAuth(
         return Jwts.builder()
             .setSubject(userId.toString())
             .setIssuedAt(now.toDate())
-            .setExpiration(now.plusHours(12).toDate()) // 12 hours
+            .setExpiration(now.plusMinutes(15).toDate()) // 15 minutes for access token
             .signWith(getSigningKey(), SignatureAlgorithm.HS256)
             .compact()
     }
