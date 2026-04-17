@@ -74,24 +74,44 @@ sudo apt install -y nodejs
 
 # Install Docker Desktop for Windows and enable WSL2 integration
 # https://docs.docker.com/desktop/windows/wsl/
+
+# Fix line endings for shell scripts (required for WSL)
+sudo apt install dos2unix
+cd /path/to/personalFinance
+find . -name "*.sh" -type f -exec dos2unix {} \;
 ```
 
 ### 1. Start LocalStack (DynamoDB)
 
 ```bash
-# Start LocalStack container and create tables
+# Start LocalStack container
 docker-compose up -d
 
-# Verify tables were created
-docker-compose logs localstack | grep "Creating table"
+# Wait for initialization (tables are auto-created by init script)
+sleep 10
+
+# Verify tables were created (should show 5 tables)
+docker exec localstack aws dynamodb list-tables \
+  --endpoint-url http://localhost:4566 \
+  --region eu-central-1
 ```
 
-This creates 5 DynamoDB tables:
-- `users` - User accounts with authentication
-- `refresh_tokens` - JWT refresh tokens (with TTL)
-- `categories` - User and household categories
-- `households` - Shared budget groups
-- `entries` - Income/expense/investment transactions
+**Expected output:**
+```json
+{
+    "TableNames": [
+        "categories",
+        "entries",
+        "households",
+        "refresh_tokens",
+        "users"
+    ]
+}
+```
+
+The init script (`backend/scripts/init-dynamodb.sh`) automatically creates these 5 tables on startup.
+
+**If you don't see 5 tables, see the troubleshooting section below.**
 
 ### 2. Start Backend
 
@@ -408,6 +428,41 @@ docker exec -it localstack aws dynamodb list-tables --endpoint-url http://localh
 
 # Restart LocalStack
 docker-compose restart localstack
+
+# View initialization logs
+docker-compose logs localstack
+```
+
+### Tables not created on LocalStack startup
+
+**On WSL, line endings issue causes init script to fail:**
+
+```bash
+# Install dos2unix in WSL
+sudo apt install dos2unix
+
+# Fix the init script
+dos2unix backend/scripts/init-dynamodb.sh
+
+# Restart LocalStack to run fixed script
+docker-compose restart localstack
+
+# Verify tables created
+docker-compose logs localstack | grep "Creating table"
+```
+
+**Or create tables manually:**
+
+```bash
+# Run the script manually inside LocalStack container
+docker exec -it localstack bash
+cd /etc/localstack/init/ready.d
+dos2unix init-dynamodb.sh  # if needed
+bash init-dynamodb.sh
+exit
+
+# Or from host
+docker exec -it localstack bash /etc/localstack/init/ready.d/init-dynamodb.sh
 ```
 
 ### Mobile app stuck on loading screen
@@ -430,6 +485,24 @@ docker-compose restart localstack
 4. On phone, shake device → "Reload" to reload app with new config
 
 ### WSL2 networking issues
+
+**Line endings issue:**
+
+If you get "cannot execute: required file not found" on shell scripts:
+
+```bash
+# Install dos2unix
+sudo apt install dos2unix
+
+# Fix all shell scripts
+cd /path/to/personalFinance
+find . -name "*.sh" -type f -exec dos2unix {} \;
+
+# Or fix individual file
+dos2unix backend/scripts/init-dynamodb.sh
+```
+
+**Port forwarding:**
 
 ```powershell
 # In Windows PowerShell (Admin)

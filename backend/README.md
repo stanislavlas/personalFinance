@@ -9,7 +9,28 @@ Kotlin Spring Boot REST API with DynamoDB (via LocalStack for local development)
 ```bash
 # From project root
 docker-compose up -d
+
+# Wait for initialization
+sleep 10
+
+# Verify tables were created (should show 5 tables)
+docker exec -it localstack aws dynamodb list-tables --endpoint-url http://localhost:4566 --region eu-central-1
 ```
+
+**Expected output:**
+```json
+{
+    "TableNames": [
+        "categories",
+        "entries", 
+        "households",
+        "refresh_tokens",
+        "users"
+    ]
+}
+```
+
+**If tables not created:** See "Tables not created" section in troubleshooting below.
 
 ### 2. Run Backend
 
@@ -241,12 +262,37 @@ docker-compose logs localstack
 ### Tables not created
 
 ```bash
+# Check LocalStack logs for errors
+docker-compose logs localstack
+
 # Recreate tables
 docker-compose down
 docker-compose up -d
+sleep 10
+docker exec -it localstack aws dynamodb list-tables --endpoint-url http://localhost:4566 --region eu-central-1
+```
 
-# Check init script logs
+**On WSL, if you see "cannot execute: required file not found":**
+
+```bash
+# Install dos2unix
+sudo apt install dos2unix
+
+# Fix line endings
+dos2unix backend/scripts/init-dynamodb.sh
+
+# Restart LocalStack
+docker-compose restart localstack
+
+# Verify tables created
 docker-compose logs localstack | grep "Creating table"
+```
+
+**Or create tables manually:**
+
+```bash
+# Run init script inside container
+docker exec -it localstack bash /etc/localstack/init/ready.d/init-dynamodb.sh
 ```
 
 ### Gradle permission denied (WSL)
