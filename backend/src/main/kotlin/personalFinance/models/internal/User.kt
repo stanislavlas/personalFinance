@@ -10,6 +10,8 @@ data class User(
     val name: String,
     val password: String,
     val userId: UUID,
+    val householdId: UUID? = null,
+    val householdRole: MemberRole? = null
 ) {
     fun toApi() = User(
         currency = this.currency,
