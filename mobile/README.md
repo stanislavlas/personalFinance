@@ -159,7 +159,7 @@ mobile/
 - Optimistic updates (instant UI, syncs in background)
 
 ### Categories
-- 20 default categories (4 income, 16 expense) auto-seeded by backend on first use
+- 8 default categories (1 income, 7 expense) auto-seeded by backend on first use
 - Create unlimited custom categories with emojis & colors
 - Organized by type (income/expense/investment)
 - Stored in DynamoDB per-user (or per-household)

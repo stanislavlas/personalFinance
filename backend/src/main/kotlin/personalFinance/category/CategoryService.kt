@@ -96,12 +96,9 @@ class CategoryService(
             return
         }
 
-        // Seed default income categories (4 - matching mobile app)
+        // Seed default income categories
         val incomeCategories = listOf(
             Triple("Salary", "💼", "#1D9E75"),
-            Triple("Meal Vouchers", "🍽️", "#5DCAA5"),
-            Triple("Flexi Pass", "💳", "#9FE1CB"),
-            Triple("Invested", "🪙", "#63B3ED")
         )
 
         incomeCategories.forEach { (name, emoji, color) ->
@@ -119,23 +116,14 @@ class CategoryService(
             )
         }
 
-        // Seed default expense categories (16 - matching mobile app)
+        // Seed default expense categories
         val expenseCategories = listOf(
             Triple("Rent", "🏠", "#D85A30"),
             Triple("Energy", "🔥", "#EF9F27"),
-            Triple("Electricity", "⚡", "#FAC775"),
-            Triple("Internet", "🌐", "#7F77DD"),
-            Triple("Phone", "📱", "#534AB7"),
-            Triple("Insurance", "🛡️", "#888780"),
             Triple("Groceries", "🛒", "#D4537E"),
-            Triple("Household", "🏡", "#993556"),
             Triple("Transport", "🚗", "#BA7517"),
             Triple("Clothing", "👕", "#F0997B"),
-            Triple("Multisport", "🏋️", "#5DCAA5"),
             Triple("Subscription", "📺", "#AFA9EC"),
-            Triple("Dining Out", "🍕", "#D85A30"),
-            Triple("Alza", "🖥️", "#185FA5"),
-            Triple("Entertainment", "🎉", "#7F77DD"),
             Triple("Other", "❓", "#D3D1C7")
         )
 

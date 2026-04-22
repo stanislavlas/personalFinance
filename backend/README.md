@@ -143,17 +143,17 @@ Base URL: `http://localhost:8080`
 - `PUT /api/auth/password` - Change password
 
 ### Categories
-- `GET /api/categories` - List categories (auto-seeds 20 defaults on first access)
+- `GET /api/categories` - List categories (auto-seeds 8 defaults on first access)
 - `POST /api/categories` - Create custom category
 - `DELETE /api/categories/:id` - Delete category
 
 **Default categories are automatically seeded when a user first accesses the categories API.**
 
-Income categories (4):
-- Salary, Meal Vouchers, Flexi Pass, Invested
+Income categories (1):
+- Salary
 
-Expense categories (16):
-- Rent, Energy, Electricity, Internet, Phone, Insurance, Groceries, Household, Transport, Clothing, Multisport, Subscription, Dining Out, Alza, Entertainment, Other
+Expense categories (7):
+- Rent, Energy, Groceries, Transport, Clothing, Subscription, Other
 
 **To seed categories for existing users or test accounts:**
 ```bash

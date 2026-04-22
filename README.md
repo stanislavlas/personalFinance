@@ -5,7 +5,7 @@ Full-stack personal finance tracker with **Kotlin/Spring Boot backend** and **Ex
 ## Features
 
 - 💰 **Income, Expense & Investment Tracking** - Categorize all your transactions
-- 🏷️ **Dynamic Categories** - Create custom categories with emojis and colors (20 defaults auto-seeded)
+- 🏷️ **Dynamic Categories** - Create custom categories with emojis and colors (8 defaults auto-seeded)
 - 🏠 **Household Sharing** - Share budget with family members (owner/member roles)
 - 📊 **Dashboard Analytics** - View totals, needs vs wants, category breakdowns
 - 🔐 **JWT Authentication** - Access tokens (15 min) + refresh tokens (30 days)
