@@ -103,6 +103,7 @@ export function AccountScreen({ user, household, onLogout, onDeleteAccount, onCh
           </View>
         )}
       </View>
+      </View>
     </ScrollView>
   );
 }
