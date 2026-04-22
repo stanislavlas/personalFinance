@@ -186,6 +186,7 @@ export function CategoriesScreen({ incomeCategories, expenseCategories, customCa
           </View>
         ))}
       </View>
+      </View>
     </ScrollView>
   );
 }
