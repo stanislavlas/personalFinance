@@ -25,12 +25,14 @@ async function saveCache(entries) {
 
 export function useEntries(yearMonth, isAuthenticated, householdId = null) {
   const [entries, setEntries] = useState([]);
+  const [allEntries, setAllEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
   const pendingRef            = useRef(new Set());
 
   const filtered = entries.filter(e => !yearMonth || e.date?.startsWith(yearMonth));
 
+  // Fetch entries for specific month
   const fetchEntries = useCallback(async () => {
     if (!isAuthenticated) { setLoading(false); return; }
     setLoading(true); setError(null);
@@ -48,12 +50,30 @@ export function useEntries(yearMonth, isAuthenticated, householdId = null) {
         return deduped;
       });
     } catch (err) {
+      if (err.code === "AUTH_EXPIRED") {
+        // Session expired - don't cache, let auth system handle it
+        setError("Session expired. Please log in again.");
+        return;
+      }
       setError(err.message);
       loadCache().then(cached => setEntries(cached));
     } finally { setLoading(false); }
   }, [yearMonth, isAuthenticated, householdId]);
 
+  // Fetch ALL entries (no month filter) for dashboard charts
+  const fetchAllEntries = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const data = await listEntries(null, householdId);
+      const transformed = data.map(transformFromApi);
+      setAllEntries(transformed);
+    } catch (err) {
+      console.error("Failed to fetch all entries:", err);
+    }
+  }, [isAuthenticated, householdId]);
+
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
+  useEffect(() => { fetchAllEntries(); }, [fetchAllEntries]);
 
   const addEntry = useCallback(async (entry) => {
     const payload = householdId ? { ...entry, householdId } : entry;
@@ -72,13 +92,15 @@ export function useEntries(yearMonth, isAuthenticated, householdId = null) {
         saveCache(n);
         return n;
       });
+      // Refresh all entries for dashboard
+      fetchAllEntries();
     } catch (err) {
       setEntries(prev => { const n = prev.filter(e => e.entryId !== tempId); saveCache(n); return n; });
       throw err;
     } finally {
       pendingRef.current.delete(tempId);
     }
-  }, [householdId]);
+  }, [householdId, fetchAllEntries]);
 
   const updateEntry = useCallback(async (updated) => {
     const original = entries.find(e => e.entryId === updated.entryId);
@@ -101,9 +123,13 @@ export function useEntries(yearMonth, isAuthenticated, householdId = null) {
       saveCache(n);
       return n;
     });
-    try { await apiDeleteEntry(entryId); }
+    try {
+      await apiDeleteEntry(entryId);
+      // Refresh all entries for dashboard
+      fetchAllEntries();
+    }
     catch { if (backup) setEntries(prev => { const n = [backup, ...prev]; saveCache(n); return n; }); }
-  }, []);
+  }, [fetchAllEntries]);
 
-  return { entries: filtered, allEntries: entries, loading, error, addEntry, updateEntry, removeEntry, refresh: fetchEntries };
+  return { entries: filtered, allEntries, loading, error, addEntry, updateEntry, removeEntry, refresh: fetchEntries };
 }

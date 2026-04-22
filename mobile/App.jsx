@@ -48,6 +48,23 @@ export default function App() {
   const auth = useAuth();
   const { user, isAuthenticated, ready, loading: authLoading, error: authError, clearError, login, register, logout, deleteAccount, changePassword } = auth;
 
+  // Handle session expiration globally
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { getAccessToken, getRefreshToken } = await import("./src/services/auth.js");
+      const [access, refresh] = await Promise.all([getAccessToken(), getRefreshToken()]);
+      if (!access && !refresh && isAuthenticated) {
+        // Tokens were cleared but user is still set - session expired
+        logout();
+      }
+    };
+
+    if (isAuthenticated) {
+      const interval = setInterval(checkAuth, 5000); // Check every 5 seconds
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, logout]);
+
   const [tab, setTab]               = useState("dashboard");
   const [filterMonth, setFilterMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [showMonthPicker, setShowMonthPicker] = useState(false);
@@ -95,8 +112,8 @@ export default function App() {
   const catProps = { incomeCategories, expenseCategories, allCategories, colorMap, getCategoryById };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
+    <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: StatusBar.currentHeight || 0 }}>
+      <StatusBar barStyle="dark-content" backgroundColor={C.bg} translucent={false} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -188,7 +205,7 @@ export default function App() {
           );
         })}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

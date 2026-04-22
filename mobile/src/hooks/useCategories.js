@@ -55,6 +55,11 @@ export function useCategories(isAuthenticated) {
       setAllCats(transformed);
       await saveCache(transformed);
     } catch (e) {
+      if (e.code === "AUTH_EXPIRED") {
+        // Session expired - don't cache, let auth system handle it
+        setError("Session expired. Please log in again.");
+        return;
+      }
       setError(e.message);
       setAllCats(await loadCached());
     } finally {
