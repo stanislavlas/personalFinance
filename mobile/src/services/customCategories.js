@@ -20,10 +20,10 @@ export async function listCustomCategories() {
   return authRequest("/api/categories");
 }
 
-export async function createCustomCategory({ label, emoji, type }) {
+export async function createCustomCategory({ label, emoji, type, color = "#7F77DD" }) {
   return authRequest("/api/categories", {
     method: "POST",
-    body: JSON.stringify({ name: label, emoji, type }),
+    body: JSON.stringify({ name: label, emoji, type: type.toUpperCase(), color }),
   });
 }
 

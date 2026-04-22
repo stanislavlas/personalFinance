@@ -101,12 +101,33 @@ docker exec -it localstack aws dynamodb scan \
   --endpoint-url http://localhost:4566 \
   --region eu-central-1
 
+# Scan categories for a specific user
+docker exec -it localstack aws dynamodb query \
+  --table-name categories \
+  --index-name userId-index \
+  --key-condition-expression "userId = :uid" \
+  --expression-attribute-values '{":uid":{"S":"<user-id>"}}' \
+  --endpoint-url http://localhost:4566 \
+  --region eu-central-1
+
 # Delete all items (useful for testing)
 docker exec -it localstack bash
 # Inside container:
 aws dynamodb scan --table-name users --endpoint-url http://localhost:4566 --region eu-central-1 | \
   jq -r '.Items[] | "{\\"userId\\": {\\"S\\": \\"" + .userId.S + "\\"}}"' | \
   xargs -I {} aws dynamodb delete-item --table-name users --key '{}' --endpoint-url http://localhost:4566 --region eu-central-1
+```
+
+### Seeding Categories
+
+Categories are automatically seeded when a user first calls `GET /api/categories`. For existing users or manual seeding:
+
+```bash
+# Seed categories for a specific user
+./scripts/seed-categories.sh <user-id-uuid>
+
+# Example
+./scripts/seed-categories.sh 123e4567-e89b-12d3-a456-426614174000
 ```
 
 ## API Endpoints
@@ -122,9 +143,35 @@ Base URL: `http://localhost:8080`
 - `PUT /api/auth/password` - Change password
 
 ### Categories
-- `GET /api/categories` - List categories (auto-seeds 26 defaults on first access)
+- `GET /api/categories` - List categories (auto-seeds 20 defaults on first access)
 - `POST /api/categories` - Create custom category
 - `DELETE /api/categories/:id` - Delete category
+
+**Default categories are automatically seeded when a user first accesses the categories API.**
+
+Income categories (4):
+- Salary, Meal Vouchers, Flexi Pass, Invested
+
+Expense categories (16):
+- Rent, Energy, Electricity, Internet, Phone, Insurance, Groceries, Household, Transport, Clothing, Multisport, Subscription, Dining Out, Alza, Entertainment, Other
+
+**To seed categories for existing users or test accounts:**
+```bash
+# Get your userId from the users table or API
+USER_ID="<your-user-id-uuid>"
+
+# Run the seeding script
+cd backend
+./scripts/seed-categories.sh $USER_ID
+
+# Or for multiple users, query DynamoDB and seed each
+docker exec -it localstack aws dynamodb scan \
+  --table-name users \
+  --endpoint-url http://localhost:4566 \
+  --region eu-central-1 \
+  --query 'Items[].userId.S' \
+  --output text | xargs -n1 ./scripts/seed-categories.sh
+```
 
 ### Entries (Transactions)
 - `GET /api/entries?yearMonth=YYYY-MM&householdId=xxx` - List entries

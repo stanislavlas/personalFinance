@@ -63,7 +63,7 @@ EXPO_PUBLIC_API_BASE_URL=http://192.168.1.100:8080
 The app caches data in AsyncStorage for offline access:
 - User credentials (access token, refresh token)
 - Entries (optimistic updates)
-- Categories
+- Categories (fetched from API, cached locally)
 
 Changes made offline are synced when connection is restored.
 
@@ -138,7 +138,8 @@ mobile/
     │   └── customCategories.js # Category CRUD
     │
     └── utils/
-        ├── categories.js     # Default 26 categories
+        ├── categories.js     # Category documentation (data now in DB)
+        ├── enums.js          # API/UI type mappings
         └── theme.js          # Colors, styles, formatters
 ```
 
@@ -158,10 +159,11 @@ mobile/
 - Optimistic updates (instant UI, syncs in background)
 
 ### Categories
-- 26 default categories with emojis & colors
-- Create unlimited custom categories
-- Organized by type (income/expense)
-- Used across personal and household entries
+- 20 default categories (4 income, 16 expense) auto-seeded by backend on first use
+- Create unlimited custom categories with emojis & colors
+- Organized by type (income/expense/investment)
+- Stored in DynamoDB per-user (or per-household)
+- Fetched from API and cached locally in AsyncStorage
 
 ### Households
 - Share budget with family/roommates

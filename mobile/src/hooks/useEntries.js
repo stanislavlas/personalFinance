@@ -1,8 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { listEntries, putEntry, deleteEntry as apiDeleteEntry } from "../services/dynamodb.js";
+import { fromApiTransactionType, fromApiNecessity } from "../utils/enums.js";
 
 const LS_KEY = "budget_cache";
+
+// Transform API response to UI format
+function transformFromApi(entry) {
+  return {
+    ...entry,
+    type: fromApiTransactionType(entry.type),
+    necessity: entry.necessity ? fromApiNecessity(entry.necessity) : undefined,
+    amount: typeof entry.amount === "object" ? entry.amount.value : entry.amount,
+    category: entry.categoryId,  // Map categoryId to category for UI
+  };
+}
 
 async function loadCache() {
   try { return JSON.parse(await AsyncStorage.getItem(LS_KEY) || "[]"); } catch { return []; }
@@ -24,10 +36,11 @@ export function useEntries(yearMonth, isAuthenticated, householdId = null) {
     setLoading(true); setError(null);
     try {
       const data = await listEntries(yearMonth, householdId);
+      const transformed = data.map(transformFromApi);
       setEntries(prev => {
         const pending = prev.filter(e => pendingRef.current.has(e.entryId));
         const seen    = new Set();
-        const deduped = [...data, ...pending].filter(e => {
+        const deduped = [...transformed, ...pending].filter(e => {
           if (seen.has(e.entryId)) return false;
           seen.add(e.entryId); return true;
         });
@@ -43,14 +56,28 @@ export function useEntries(yearMonth, isAuthenticated, householdId = null) {
   useEffect(() => { fetchEntries(); }, [fetchEntries]);
 
   const addEntry = useCallback(async (entry) => {
-    const stamped = householdId ? { ...entry, householdId } : entry;
-    pendingRef.current.add(stamped.entryId);
-    setEntries(prev => { const n = [stamped, ...prev]; saveCache(n); return n; });
-    try { await putEntry(stamped); }
-    catch (err) {
-      setEntries(prev => { const n = prev.filter(e => e.entryId !== stamped.entryId); saveCache(n); return n; });
+    const payload = householdId ? { ...entry, householdId } : entry;
+    // Create optimistic temporary entry with client-generated ID for UI
+    const tempId = `temp-${Date.now()}`;
+    const optimisticEntry = { ...payload, entryId: tempId };
+
+    pendingRef.current.add(tempId);
+    setEntries(prev => { const n = [optimisticEntry, ...prev]; saveCache(n); return n; });
+
+    try {
+      const savedEntry = await putEntry(payload);
+      // Replace temp entry with actual entry from server
+      setEntries(prev => {
+        const n = prev.map(e => e.entryId === tempId ? transformFromApi(savedEntry) : e);
+        saveCache(n);
+        return n;
+      });
+    } catch (err) {
+      setEntries(prev => { const n = prev.filter(e => e.entryId !== tempId); saveCache(n); return n; });
       throw err;
-    } finally { pendingRef.current.delete(stamped.entryId); }
+    } finally {
+      pendingRef.current.delete(tempId);
+    }
   }, [householdId]);
 
   const updateEntry = useCallback(async (updated) => {

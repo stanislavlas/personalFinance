@@ -1,80 +1,43 @@
-// All categories in English, mapped from original Slovak names.
-// Each entry has a `type` so the app can auto-assign new entries.
-// The `groupId` field is reserved for future household sharing — null = personal only.
+/**
+ * Category Configuration (Historical Reference)
+ * =============================================
+ *
+ * Categories are now stored in DynamoDB and loaded dynamically via the API.
+ * This file is kept for reference and documentation purposes only.
+ *
+ * When a new user registers, the backend automatically seeds these default categories
+ * via CategoryService.seedDefaultCategories().
+ *
+ * To add or modify categories:
+ * 1. Update the backend: src/main/kotlin/personalFinance/category/CategoryService.kt
+ * 2. Update the seeding script: scripts/seed-categories.sh (for existing users)
+ * 3. Update this documentation
+ *
+ * Categories are fetched via useCategories() hook which calls /api/categories
+ */
 
-export const INCOME_CATEGORIES = [
-  { id: "salary",        label: "Salary",        emoji: "💼" },
-  { id: "meal_vouchers", label: "Meal Vouchers",  emoji: "🍽️" },
-  { id: "flexi",         label: "Flexi Pass",     emoji: "💳" },
-  { id: "trading",       label: "Trading",        emoji: "📈" },
-  { id: "independence",  label: "Independence",   emoji: "🏦" },
-  { id: "income",        label: "Income",         emoji: "💰" },
-  { id: "invested",      label: "Invested",       emoji: "🪙" },
-  { id: "saved",         label: "Saved",          emoji: "🐖" },
-];
+// Default Income Categories (4)
+// - Salary (💼, #1D9E75)
+// - Meal Vouchers (🍽️, #5DCAA5)
+// - Flexi Pass (💳, #9FE1CB)
+// - Invested (🪙, #63B3ED)
 
-export const EXPENSE_CATEGORIES = [
-  { id: "rent",          label: "Rent",           emoji: "🏠" },
-  { id: "energy",        label: "Energy",         emoji: "🔥" },
-  { id: "electricity",   label: "Electricity",    emoji: "⚡" },
-  { id: "internet",      label: "Internet",       emoji: "🌐" },
-  { id: "phone",         label: "Phone",          emoji: "📱" },
-  { id: "insurance",     label: "Insurance",      emoji: "🛡️" },
-  { id: "groceries",     label: "Groceries",      emoji: "🛒" },
-  { id: "household",     label: "Household",      emoji: "🏡" },
-  { id: "transport",     label: "Transport",      emoji: "🚗" },
-  { id: "clothing",      label: "Clothing",       emoji: "👕" },
-  { id: "multisport",    label: "Multisport",     emoji: "🏋️" },
-  { id: "subscription",  label: "Subscription",   emoji: "📺" },
-  { id: "dining",        label: "Dining Out",     emoji: "🍕" },
-  { id: "alza",          label: "Alza",           emoji: "🖥️" },
-  { id: "entertainment", label: "Entertainment",  emoji: "🎉" },
-  { id: "essentials",    label: "Essentials",     emoji: "🧴" },
-  { id: "other_expense", label: "Other Expenses", emoji: "📦" },
-  { id: "expenses",      label: "Expenses",       emoji: "💸" },
-  { id: "other",         label: "Other",          emoji: "❓" },
-];
+// Default Expense Categories (16)
+// - Rent (🏠, #D85A30)
+// - Energy (🔥, #EF9F27)
+// - Electricity (⚡, #FAC775)
+// - Internet (🌐, #7F77DD)
+// - Phone (📱, #534AB7)
+// - Insurance (🛡️, #888780)
+// - Groceries (🛒, #D4537E)
+// - Household (🏡, #993556)
+// - Transport (🚗, #BA7517)
+// - Clothing (👕, #F0997B)
+// - Multisport (🏋️, #5DCAA5)
+// - Subscription (📺, #AFA9EC)
+// - Dining Out (🍕, #D85A30)
+// - Alza (🖥️, #185FA5)
+// - Entertainment (🎉, #7F77DD)
+// - Other (❓, #D3D1C7)
 
-export const ALL_CATEGORIES = [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES];
 
-export function getCategoryById(id) {
-  return ALL_CATEGORIES.find(c => c.id === id) || { id, label: id, emoji: "❓" };
-}
-
-export function getDefaultType(categoryId) {
-  return INCOME_CATEGORIES.find(c => c.id === categoryId) ? "income" : "expense";
-}
-
-export const CATEGORY_COLORS = {
-  income:  "#1D9E75",
-  expense: "#D85A30",
-  byId: {
-    salary:        "#1D9E75",
-    meal_vouchers: "#5DCAA5",
-    flexi:         "#9FE1CB",
-    trading:       "#378ADD",
-    independence:  "#185FA5",
-    income:        "#0C447C",
-    invested:      "#63B3ED",
-    saved:         "#9FE1CB",
-    rent:          "#D85A30",
-    energy:        "#EF9F27",
-    electricity:   "#FAC775",
-    internet:      "#7F77DD",
-    phone:         "#534AB7",
-    insurance:     "#888780",
-    groceries:     "#D4537E",
-    household:     "#993556",
-    transport:     "#BA7517",
-    clothing:      "#F0997B",
-    multisport:    "#5DCAA5",
-    subscription:  "#AFA9EC",
-    dining:        "#D85A30",
-    alza:          "#185FA5",
-    entertainment: "#7F77DD",
-    essentials:    "#B4B2A9",
-    other_expense: "#888780",
-    expenses:      "#F5C4B3",
-    other:         "#D3D1C7",
-  }
-};

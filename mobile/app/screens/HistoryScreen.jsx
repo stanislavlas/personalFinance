@@ -1,14 +1,14 @@
 import { useState, useMemo } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from "react-native";
 import { C, S, fmt } from "../../src/utils/theme.js";
-import { INCOME_CATEGORIES } from "../../src/utils/categories.js";
+import { toApiNecessity } from "../../src/utils/enums.js";
 
 const NECESSITY_STYLE = {
   necessary: { bg: "#E6F1FB", color: "#185FA5", label: "🔒 Necessary" },
   optional:  { bg: "#FAEEDA", color: "#854F0B", label: "✂️ Optional"  },
 };
 
-export function HistoryScreen({ entries, onDelete, onUpdate, household, allCategories, colorMap, getCategoryById }) {
+export function HistoryScreen({ entries, onDelete, onUpdate, household, incomeCategories, allCategories, colorMap, getCategoryById }) {
   const [expandedId, setExpandedId] = useState(null);
   const [search, setSearch]         = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -37,7 +37,7 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, allCateg
 
   async function cycleNecessity(entry) {
     const next = entry.necessity === "optional" ? "necessary" : "optional";
-    await onUpdate({ ...entry, necessity: next });
+    await onUpdate({ ...entry, necessity: toApiNecessity(next) });
   }
 
   return (
@@ -179,7 +179,7 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, allCateg
                       const cc    = colorMap[cId] || "#888";
                       return (
                         <TouchableOpacity key={cId} onPress={async () => {
-                          const isInc = INCOME_CATEGORIES.find(ic => ic.id === cId);
+                          const isInc = incomeCategories.find(ic => (ic.id || ic.categoryId) === cId);
                           await onUpdate({ ...entry, category: cId, type: isInc ? "income" : "expense" });
                           setExpandedId(null);
                         }} style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16, borderWidth: 0.5, borderColor: active ? cc : C.border, backgroundColor: active ? cc + "20" : C.bgSecondary }}>

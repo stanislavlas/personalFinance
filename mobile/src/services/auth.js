@@ -3,6 +3,7 @@
  * Uses AsyncStorage instead of localStorage. All token ops are async.
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { decode as base64Decode } from "base-64";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:8080";
 const KEY_ACCESS  = "budget_access_token";
@@ -32,7 +33,7 @@ function isExpired(token) {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return true;
-    const p = JSON.parse(atob(parts[1]));
+    const p = JSON.parse(base64Decode(parts[1]));
     if (!p.exp || typeof p.exp !== 'number') return true;
     return Date.now() / 1000 > p.exp - 30;
   } catch { return true; }

@@ -9,7 +9,7 @@ sleep 5
 export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test
 ENDPOINT="http://localhost:4566"
-REGION="us-west-2"
+REGION="eu-central-1"
 
 # 1. Create users table
 echo "Creating users table..."

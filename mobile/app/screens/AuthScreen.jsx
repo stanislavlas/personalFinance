@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
-import { C, S } from "../src/utils/theme.js";
+import { C, S } from "../../src/utils/theme.js";
 
 export function AuthScreen({ onLogin, onRegister, loading, error, onClearError }) {
   const [mode, setMode]         = useState("login");

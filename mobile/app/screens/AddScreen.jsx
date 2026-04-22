@@ -4,9 +4,9 @@ import {
   StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from "react-native";
 import { C, S } from "../../src/utils/theme.js";
-import { newEntryId } from "../../src/services/dynamodb.js";
+import { toApiTransactionType, toApiNecessity } from "../../src/utils/enums.js";
 
-export function AddScreen({ onAdd, authorName, incomeCategories, expenseCategories, colorMap }) {
+export function AddScreen({ onAdd, authorName, currency = "EUR", incomeCategories, expenseCategories, colorMap }) {
   const [type, setType]         = useState("expense");
   const [amount, setAmount]     = useState("");
   const [category, setCategory] = useState(() => expenseCategories[0]?.id || expenseCategories[0]?.categoryId || "");
@@ -27,18 +27,17 @@ export function AddScreen({ onAdd, authorName, incomeCategories, expenseCategori
   async function handleSubmit() {
     const amt = parseFloat(amount.replace(",", "."));
     if (!amt || amt <= 0) { setFlash({ ok: false, msg: "Enter a valid amount" }); return; }
+    if (!category) { setFlash({ ok: false, msg: "Please select a category" }); return; }
     setSaving(true);
     try {
       await onAdd({
-        entryId:   newEntryId(),
-        type,
-        amount:    amt,
-        category,
-        necessity: type === "expense" ? necessity : undefined,
-        note:      note.trim(),
+        type:      toApiTransactionType(type),
+        amount:    { value: amt, currency },
+        categoryId: category,
+        necessity: toApiNecessity(necessity),
+        note:      note.trim() || "",
+        name:      note.trim() || "Transaction",
         date,
-        source:    "manual",
-        authorName: authorName || undefined,
       });
       setAmount(""); setNote("");
       setFlash({ ok: true, msg: "✓ Saved" });

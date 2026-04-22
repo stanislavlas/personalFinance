@@ -8,10 +8,6 @@
 
 import { authRequest } from "./auth.js";
 
-export function newEntryId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
 export async function listEntries(yearMonth = null, householdId = null) {
   const params = new URLSearchParams();
   if (yearMonth)   params.set("yearMonth",   yearMonth);

@@ -1,5 +1,6 @@
+import "react-native-gesture-handler";
 import { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator, ScrollView, Alert } from "react-native";
 import { useAuth }         from "./src/hooks/useAuth.js";
 import { useEntries }      from "./src/hooks/useEntries.js";
 import { useHousehold }    from "./src/hooks/useHousehold.js";
@@ -30,6 +31,20 @@ function buildMonths() {
 }
 
 export default function App() {
+  const [appError, setAppError] = useState(null);
+
+  // Global error handler
+  useEffect(() => {
+    const errorHandler = (error, isFatal) => {
+      console.error("Global Error:", error, isFatal);
+      setAppError(error?.message || String(error));
+    };
+
+    if (global.ErrorUtils) {
+      global.ErrorUtils.setGlobalHandler(errorHandler);
+    }
+  }, []);
+
   const auth = useAuth();
   const { user, isAuthenticated, ready, loading: authLoading, error: authError, clearError, login, register, logout, deleteAccount, changePassword } = auth;
 
@@ -43,6 +58,20 @@ export default function App() {
   const { entries, allEntries, loading: entriesLoading, error: entriesError, addEntry, updateEntry, removeEntry } = useEntries(filterMonth, isAuthenticated, householdId);
 
   const { incomeCategories, expenseCategories, allCategories, customCats, colorMap, getCategoryById, createCategory, deleteCategory } = useCategories(isAuthenticated);
+
+  // Show error screen if something crashed
+  if (appError) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: C.bg, padding: 20 }}>
+        <Text style={{ fontSize: 48, marginBottom: 16 }}>⚠️</Text>
+        <Text style={{ fontSize: 18, fontWeight: "700", color: C.text, marginBottom: 8 }}>Something went wrong</Text>
+        <Text style={{ fontSize: 14, color: C.textSecondary, textAlign: "center", marginBottom: 20 }}>{appError}</Text>
+        <TouchableOpacity onPress={() => setAppError(null)} style={{ backgroundColor: C.green, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 }}>
+          <Text style={{ color: "#fff", fontWeight: "600" }}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // Splash screen while AsyncStorage rehydrates
   if (!ready) {
@@ -119,13 +148,13 @@ export default function App() {
           <DashboardScreen entries={entries} allEntries={allEntries} filterMonth={filterMonth} household={household} {...catProps} />
         )}
         {tab === "add" && (
-          <AddScreen onAdd={addEntry} authorName={user?.name} incomeCategories={incomeCategories} expenseCategories={expenseCategories} colorMap={colorMap} />
+          <AddScreen onAdd={addEntry} authorName={user?.name} currency={user?.currency} incomeCategories={incomeCategories} expenseCategories={expenseCategories} colorMap={colorMap} />
         )}
         {tab === "history" && (
           <HistoryScreen entries={entries} onDelete={removeEntry} onUpdate={updateEntry} household={household} {...catProps} />
         )}
         {tab === "categories" && (
-          <CategoriesScreen customCats={customCats} onCreateCategory={createCategory} onDeleteCategory={deleteCategory} />
+          <CategoriesScreen incomeCategories={incomeCategories} expenseCategories={expenseCategories} customCats={customCats} onCreateCategory={createCategory} onDeleteCategory={deleteCategory} />
         )}
         {tab === "household" && (
           <HouseholdScreen household={household} user={user} onCreate={createHousehold} onAddMember={addMember} onRemoveMember={removeMember} onLeave={leaveHousehold} onDelete={deleteHousehold} onRename={renameHousehold} />

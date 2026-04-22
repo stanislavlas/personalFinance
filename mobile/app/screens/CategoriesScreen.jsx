@@ -4,7 +4,6 @@ import {
   StyleSheet, ActivityIndicator, Alert,
 } from "react-native";
 import { C, S } from "../../src/utils/theme.js";
-import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from "../../src/utils/categories.js";
 
 const EMOJI_OPTIONS = [
   "🛍️","🎮","🐾","🌿","🏖️","🎵","🍷","📚","🧘","🚴","🏥","🎁",
@@ -12,7 +11,7 @@ const EMOJI_OPTIONS = [
   "🥗","🍰","🚌","🎯","💡","🪴","🎪","🧩","🛒","🏠","💼","📱",
 ];
 
-export function CategoriesScreen({ customCats, onCreateCategory, onDeleteCategory, loading }) {
+export function CategoriesScreen({ incomeCategories, expenseCategories, customCats, onCreateCategory, onDeleteCategory, loading }) {
   const [tab, setTab]           = useState("expense");
   const [showForm, setShowForm] = useState(false);
   const [label, setLabel]       = useState("");
@@ -47,7 +46,7 @@ export function CategoriesScreen({ customCats, onCreateCategory, onDeleteCategor
     );
   }
 
-  const builtInCats = tab === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const builtInCats = tab === "income" ? incomeCategories : expenseCategories;
   const customForTab = customCats.filter(c => c.type === tab);
 
   return (

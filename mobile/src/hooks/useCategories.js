@@ -5,11 +5,7 @@ import {
   createCustomCategory as apiCreate,
   deleteCustomCategory as apiDelete,
 } from "../services/customCategories.js";
-import {
-  INCOME_CATEGORIES,
-  EXPENSE_CATEGORIES,
-  CATEGORY_COLORS,
-} from "../utils/categories.js";
+import { fromApiTransactionType } from "../utils/enums.js";
 
 const CACHE_KEY = "budget_custom_categories";
 
@@ -31,68 +27,74 @@ async function saveCache(cats) {
   try { await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(cats)); } catch {}
 }
 
-export function useCategories(isAuthenticated) {
-  const [customCats, setCustomCats] = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState(null);
+// Transform API category to UI format
+function transformCategory(cat) {
+  return {
+    categoryId: cat.categoryId,
+    id: cat.categoryId,  // Alias for backward compatibility
+    label: cat.name,
+    emoji: cat.emoji,
+    color: cat.color,
+    type: fromApiTransactionType(cat.type),
+    isDefault: cat.isDefault || false,
+  };
+}
 
-  // Fetch custom categories from API, fall back to cache
-  const fetchCustom = useCallback(async () => {
+export function useCategories(isAuthenticated) {
+  const [allCats, setAllCats] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
+
+  // Fetch ALL categories from API (including defaults)
+  const fetchCategories = useCallback(async () => {
     if (!isAuthenticated) return;
     setLoading(true);
     try {
       const data = await listCustomCategories();
-      setCustomCats(data);
-      await saveCache(data);
+      const transformed = data.map(transformCategory);
+      setAllCats(transformed);
+      await saveCache(transformed);
     } catch (e) {
       setError(e.message);
-      setCustomCats(await loadCached());
+      setAllCats(await loadCached());
     } finally {
       setLoading(false);
     }
   }, [isAuthenticated]);
 
-  useEffect(() => { fetchCustom(); }, [fetchCustom]);
+  useEffect(() => { fetchCategories(); }, [fetchCategories]);
 
-  // Merge built-ins + custom, assigning colors to custom ones
-  const incomeCategories = [
-    ...INCOME_CATEGORIES,
-    ...customCats.filter(c => c.type === "income"),
-  ];
-  const expenseCategories = [
-    ...EXPENSE_CATEGORIES,
-    ...customCats.filter(c => c.type === "expense"),
-  ];
-  const allCategories = [...incomeCategories, ...expenseCategories];
+  // Split by type
+  const incomeCategories = allCats.filter(c => c.type === "income");
+  const expenseCategories = allCats.filter(c => c.type === "expense");
+  const customCats = allCats.filter(c => !c.isDefault);
 
-  // Merged color map — built-in colors + auto-assigned for custom
-  const colorMap = {
-    ...CATEGORY_COLORS.byId,
-    ...Object.fromEntries(
-      customCats.map((c, i) => [c.categoryId, c.color || pickColor(i)])
-    ),
-  };
+  // Color map
+  const colorMap = Object.fromEntries(
+    allCats.map((c, i) => [c.categoryId, c.color || pickColor(i)])
+  );
 
   function getCategoryById(id) {
-    return allCategories.find(c => (c.id || c.categoryId) === id)
+    return allCats.find(c => c.categoryId === id)
       || { id, categoryId: id, label: id, emoji: "❓" };
   }
 
   // Create a new custom category
   const createCategory = useCallback(async ({ label, emoji, type }) => {
     const data = await apiCreate({ label, emoji, type });
-    setCustomCats(prev => {
-      const updated = [...prev, data];
+    const transformed = transformCategory(data);
+    setAllCats(prev => {
+      const updated = [...prev, transformed];
       saveCache(updated);
       return updated;
     });
-    return data;
+    return transformed;
   }, []);
 
   // Delete a custom category
   const deleteCategory = useCallback(async (categoryId) => {
     await apiDelete(categoryId);
-    setCustomCats(prev => {
+    setAllCats(prev => {
       const updated = prev.filter(c => c.categoryId !== categoryId);
       saveCache(updated);
       return updated;
@@ -102,7 +104,7 @@ export function useCategories(isAuthenticated) {
   return {
     incomeCategories,
     expenseCategories,
-    allCategories,
+    allCategories: allCats,
     customCats,
     colorMap,
     getCategoryById,
@@ -110,6 +112,6 @@ export function useCategories(isAuthenticated) {
     error,
     createCategory,
     deleteCategory,
-    refresh: fetchCustom,
+    refresh: fetchCategories,
   };
 }

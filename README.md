@@ -5,7 +5,7 @@ Full-stack personal finance tracker with **Kotlin/Spring Boot backend** and **Ex
 ## Features
 
 - 💰 **Income, Expense & Investment Tracking** - Categorize all your transactions
-- 🏷️ **Dynamic Categories** - Create custom categories with emojis and colors (26 defaults included)
+- 🏷️ **Dynamic Categories** - Create custom categories with emojis and colors (20 defaults auto-seeded)
 - 🏠 **Household Sharing** - Share budget with family members (owner/member roles)
 - 📊 **Dashboard Analytics** - View totals, needs vs wants, category breakdowns
 - 🔐 **JWT Authentication** - Access tokens (15 min) + refresh tokens (30 days)
@@ -264,7 +264,12 @@ Docker Desktop for Windows with WSL2 integration is recommended:
 **categories**
 - PK: `categoryId` (UUID)
 - GSI: `userId-index`, `householdId-index`
-- Attributes: name, emoji, color, type (INCOME/EXPENSE/INVESTMENT), isDefault
+- Attributes: name, emoji, color, type (INCOME/EXPENSE/INVESTMENT), isDefault, createdAt
+
+**Category Seeding:**
+- Default categories (4 income, 16 expense) are automatically seeded when a user first calls `GET /api/categories`
+- For existing users or manual seeding, use `backend/scripts/seed-categories.sh <userId>`
+- Categories are stored per-user (or per-household) and can be customized
 
 **households**
 - PK: `householdId` (UUID)
