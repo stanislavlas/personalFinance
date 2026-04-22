@@ -118,23 +118,17 @@ export default function App() {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <View style={[styles.headerTitle]}>
-            <Text style={{ fontSize: 20, fontWeight: "700", color: C.text, letterSpacing: -0.5 }}>Budget</Text>
-            {household && (
-              <View style={styles.householdBadge}>
-                <Text style={{ fontSize: 11, color: C.greenDark }}>🏠 {household.name}</Text>
-              </View>
-            )}
-          </View>
-          <TouchableOpacity onPress={() => setShowMonthPicker(v => !v)}>
-            <Text style={{ fontSize: 13, color: C.textTertiary, marginTop: 1 }}>{monthLabel} ▾</Text>
-          </TouchableOpacity>
+          {household && (
+            <View style={styles.householdBadge}>
+              <Text style={{ fontSize: 11, color: C.greenDark }}>🏠 {household.name}</Text>
+            </View>
+          )}
         </View>
         {entriesLoading && <ActivityIndicator color={C.green} size="small" />}
       </View>
 
-      {/* Month picker */}
-      {showMonthPicker && (
+      {/* Month picker - moved to dashboard */}
+      {showMonthPicker && tab === "dashboard" && (
         <View style={styles.monthPicker}>
           <ScrollView>
             {months.map(m => {
@@ -162,22 +156,29 @@ export default function App() {
       {/* Screens */}
       <View style={{ flex: 1 }}>
         {tab === "dashboard" && (
-          <DashboardScreen entries={entries} allEntries={allEntries} filterMonth={filterMonth} household={household} {...catProps} />
+          <DashboardScreen
+            entries={entries}
+            allEntries={allEntries}
+            filterMonth={filterMonth}
+            setFilterMonth={setFilterMonth}
+            household={household}
+            {...catProps}
+          />
         )}
         {tab === "add" && (
           <AddScreen onAdd={addEntry} authorName={user?.name} currency={user?.currency} incomeCategories={incomeCategories} expenseCategories={expenseCategories} colorMap={colorMap} />
         )}
         {tab === "history" && (
-          <HistoryScreen entries={entries} onDelete={removeEntry} onUpdate={updateEntry} household={household} {...catProps} />
+          <HistoryScreen entries={entries} onDelete={removeEntry} onUpdate={updateEntry} household={household} onBack={() => setTab("dashboard")} {...catProps} />
         )}
         {tab === "categories" && (
-          <CategoriesScreen incomeCategories={incomeCategories} expenseCategories={expenseCategories} customCats={customCats} onCreateCategory={createCategory} onDeleteCategory={deleteCategory} />
+          <CategoriesScreen incomeCategories={incomeCategories} expenseCategories={expenseCategories} customCats={customCats} onCreateCategory={createCategory} onDeleteCategory={deleteCategory} onBack={() => setTab("dashboard")} />
         )}
         {tab === "household" && (
-          <HouseholdScreen household={household} user={user} onCreate={createHousehold} onAddMember={addMember} onRemoveMember={removeMember} onLeave={leaveHousehold} onDelete={deleteHousehold} onRename={renameHousehold} />
+          <HouseholdScreen household={household} user={user} onCreate={createHousehold} onAddMember={addMember} onRemoveMember={removeMember} onLeave={leaveHousehold} onDelete={deleteHousehold} onRename={renameHousehold} onBack={() => setTab("dashboard")} />
         )}
         {tab === "account" && (
-          <AccountScreen user={user} household={household} onLogout={logout} onDeleteAccount={deleteAccount} onChangePassword={changePassword} />
+          <AccountScreen user={user} household={household} onLogout={logout} onDeleteAccount={deleteAccount} onChangePassword={changePassword} onBack={() => setTab("dashboard")} />
         )}
       </View>
 

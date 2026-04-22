@@ -8,7 +8,7 @@ const NECESSITY_STYLE = {
   optional:  { bg: "#FAEEDA", color: "#854F0B", label: "✂️ Optional"  },
 };
 
-export function HistoryScreen({ entries, onDelete, onUpdate, household, incomeCategories, allCategories, colorMap, getCategoryById }) {
+export function HistoryScreen({ entries, onDelete, onUpdate, household, onBack, incomeCategories, allCategories, colorMap, getCategoryById }) {
   const [expandedId, setExpandedId] = useState(null);
   const [search, setSearch]         = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -42,6 +42,12 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, incomeCa
 
   return (
     <View style={S.screen}>
+      {/* Back button */}
+      <TouchableOpacity onPress={onBack} style={{ flexDirection: "row", alignItems: "center", padding: 20, paddingBottom: 10 }}>
+        <Text style={{ fontSize: 20, color: C.text }}>← </Text>
+        <Text style={{ fontSize: 16, color: C.text, fontWeight: "600" }}>History</Text>
+      </TouchableOpacity>
+
       <View style={{ paddingHorizontal: 20, paddingTop: 14 }}>
         {/* Search */}
         <View style={styles.searchRow}>

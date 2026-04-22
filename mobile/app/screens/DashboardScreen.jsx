@@ -1,8 +1,21 @@
-import { useMemo } from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
-import { C, S, fmt, MONTH_SHORT } from "../../src/utils/theme.js";
+import { useMemo, useState } from "react";
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
+import { C, S, fmt, MONTH_SHORT, MONTH_LABELS } from "../../src/utils/theme.js";
 
-export function DashboardScreen({ entries, allEntries, filterMonth, household, getCategoryById, colorMap }) {
+export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMonth, household, getCategoryById, colorMap }) {
+  const [selectedYear, setSelectedYear] = useState(() => parseInt(filterMonth.slice(0, 4)));
+
+  // Generate list of available years from allEntries
+  const availableYears = useMemo(() => {
+    const years = new Set();
+    allEntries.forEach(e => {
+      if (e.date) years.add(parseInt(e.date.slice(0, 4)));
+    });
+    const currentYear = new Date().getFullYear();
+    years.add(currentYear);
+    return Array.from(years).sort((a, b) => b - a);
+  }, [allEntries]);
+
   const totals = useMemo(() => {
     const income  = entries.filter(e => e.type === "income").reduce((s,e)  => s + e.amount, 0);
     const expense = entries.filter(e => e.type === "expense").reduce((s,e) => s + e.amount, 0);
@@ -24,14 +37,13 @@ export function DashboardScreen({ entries, allEntries, filterMonth, household, g
   }, [entries]);
 
   const monthlyData = useMemo(() => {
-    const year = filterMonth.slice(0, 4);
     return MONTH_SHORT.map((m, i) => {
-      const key = `${year}-${String(i+1).padStart(2,"0")}`;
+      const key = `${selectedYear}-${String(i+1).padStart(2,"0")}`;
       const inc = allEntries.filter(e => e.date?.startsWith(key) && e.type==="income").reduce((s,e) => s+e.amount, 0);
       const exp = allEntries.filter(e => e.date?.startsWith(key) && e.type==="expense").reduce((s,e) => s+e.amount, 0);
       return { m, inc, exp };
     });
-  }, [allEntries, filterMonth]);
+  }, [allEntries, selectedYear]);
 
   const maxBar      = Math.max(...monthlyData.map(d => Math.max(d.inc, d.exp)), 1);
   const activeMonth = parseInt(filterMonth.slice(5)) - 1;
@@ -50,6 +62,58 @@ export function DashboardScreen({ entries, allEntries, filterMonth, household, g
 
   return (
     <ScrollView style={S.scroll} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+
+      {/* Month Picker - Large, centered */}
+      <View style={{ alignItems: "center", paddingVertical: 20 }}>
+        <Text style={{ fontSize: 13, color: C.textTertiary, marginBottom: 8 }}>Selected Period</Text>
+        <TouchableOpacity
+          onPress={() => {
+            const d = new Date(filterMonth + "-01");
+            const currentMonth = d.getMonth();
+            const newMonth = (currentMonth + 1) % 12;
+            const newYear = newMonth === 0 ? selectedYear + 1 : selectedYear;
+            setFilterMonth(`${newYear}-${String(newMonth + 1).padStart(2, "0")}`);
+          }}
+          style={{
+            backgroundColor: C.greenLight,
+            paddingHorizontal: 28,
+            paddingVertical: 14,
+            borderRadius: 12,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Text style={{ fontSize: 22, fontWeight: "700", color: C.greenDark }}>
+            {MONTH_LABELS[new Date(filterMonth + "-01").getMonth()]} {filterMonth.slice(0, 4)}
+          </Text>
+          <Text style={{ fontSize: 18, color: C.greenDark }}>▾</Text>
+        </TouchableOpacity>
+
+        {/* Month selector */}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16, justifyContent: "center" }}>
+          {MONTH_SHORT.map((m, i) => {
+            const monthKey = `${selectedYear}-${String(i + 1).padStart(2, "0")}`;
+            const isActive = monthKey === filterMonth;
+            return (
+              <TouchableOpacity
+                key={i}
+                onPress={() => setFilterMonth(monthKey)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                  backgroundColor: isActive ? C.green : C.cardBg,
+                }}
+              >
+                <Text style={{ fontSize: 12, color: isActive ? "#fff" : C.text, fontWeight: isActive ? "600" : "400" }}>
+                  {m}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
 
       {/* Balance */}
       <View style={{ alignItems: "center", paddingVertical: 28 }}>
@@ -148,7 +212,28 @@ export function DashboardScreen({ entries, allEntries, filterMonth, household, g
 
       {/* Monthly chart */}
       <View style={{ marginBottom: 20 }}>
-        <Text style={S.sectionTitle}>Overview {filterMonth.slice(0,4)}</Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <Text style={S.sectionTitle}>Year Overview</Text>
+          {/* Year selector */}
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {availableYears.map(year => (
+              <TouchableOpacity
+                key={year}
+                onPress={() => setSelectedYear(year)}
+                style={{
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 8,
+                  backgroundColor: year === selectedYear ? C.green : C.cardBg,
+                }}
+              >
+                <Text style={{ fontSize: 12, color: year === selectedYear ? "#fff" : C.text, fontWeight: year === selectedYear ? "600" : "400" }}>
+                  {year}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
         <View style={{ flexDirection: "row", alignItems: "flex-end", height: 100, marginBottom: 6 }}>
           {monthlyData.map(({ m, inc, exp }, i) => {
             const active = i === activeMonth;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { C, S } from "../../src/utils/theme.js";
 
-export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemoveMember, onLeave, onDelete, onRename }) {
+export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemoveMember, onLeave, onDelete, onRename, onBack }) {
   const [view, setView]       = useState("main");
   const [nameInput, setName]  = useState("");
   const [emailInput, setEmail]= useState("");
@@ -59,7 +59,14 @@ export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemo
   }
 
   return (
-    <ScrollView style={S.screen} contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 20, paddingBottom: 40 }}>
+    <ScrollView style={S.screen} contentContainerStyle={{ paddingBottom: 40 }}>
+      {/* Back button */}
+      <TouchableOpacity onPress={onBack} style={{ flexDirection: "row", alignItems: "center", padding: 20, paddingBottom: 10 }}>
+        <Text style={{ fontSize: 20, color: C.text }}>← </Text>
+        <Text style={{ fontSize: 16, color: C.text, fontWeight: "600" }}>Household</Text>
+      </TouchableOpacity>
+
+      <View style={{ paddingHorizontal: 20 }}>
       {feedback && (
         <View style={{ padding: 12, borderRadius: 10, borderWidth: 0.5, marginBottom: 14, backgroundColor: feedback.ok ? C.greenLight : C.redLight, borderColor: feedback.ok ? C.greenBorder : C.redBorder }}>
           <Text style={{ fontSize: 13, color: feedback.ok ? C.greenDark : C.redDark }}>{feedback.msg}</Text>

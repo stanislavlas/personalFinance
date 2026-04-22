@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
 import { C, S } from "../../src/utils/theme.js";
 
-export function AccountScreen({ user, household, onLogout, onDeleteAccount, onChangePassword }) {
+export function AccountScreen({ user, household, onLogout, onDeleteAccount, onChangePassword, onBack }) {
   const [section, setSection]   = useState(null);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw]       = useState("");
@@ -30,7 +30,14 @@ export function AccountScreen({ user, household, onLogout, onDeleteAccount, onCh
   }
 
   return (
-    <ScrollView style={S.screen} contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 24, paddingBottom: 48 }}>
+    <ScrollView style={S.screen} contentContainerStyle={{ paddingBottom: 48 }}>
+      {/* Back button */}
+      <TouchableOpacity onPress={onBack} style={{ flexDirection: "row", alignItems: "center", padding: 20, paddingBottom: 10 }}>
+        <Text style={{ fontSize: 20, color: C.text }}>← </Text>
+        <Text style={{ fontSize: 16, color: C.text, fontWeight: "600" }}>Account</Text>
+      </TouchableOpacity>
+
+      <View style={{ paddingHorizontal: 20 }}>
 
       {/* User info */}
       <View style={[S.row, { marginBottom: 28 }]}>

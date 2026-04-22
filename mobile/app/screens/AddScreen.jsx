@@ -13,6 +13,7 @@ export function AddScreen({ onAdd, authorName, currency = "EUR", incomeCategorie
   const [necessity, setNecessity] = useState("necessary"); // "necessary" | "optional"
   const [note, setNote]         = useState("");
   const [date, setDate]         = useState(new Date().toISOString().slice(0, 10));
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [saving, setSaving]     = useState(false);
   const [flash, setFlash]       = useState(null);
 
@@ -149,12 +150,68 @@ export function AddScreen({ onAdd, authorName, currency = "EUR", incomeCategorie
           placeholderTextColor={C.textTertiary} value={note} onChangeText={setNote}
         />
 
-        {/* Date */}
-        <Text style={[S.label, { marginBottom: 6 }]}>Date</Text>
-        <TextInput
-          style={S.input} value={date} onChangeText={setDate}
-          placeholder="YYYY-MM-DD" placeholderTextColor={C.textTertiary}
-        />
+        {/* Date picker */}
+        <Text style={[S.label, { marginTop: 18, marginBottom: 6 }]}>Date</Text>
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(!showDatePicker)}
+          style={{
+            backgroundColor: C.cardBg,
+            borderWidth: 1,
+            borderColor: C.border,
+            borderRadius: 10,
+            padding: 14,
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontSize: 15, color: C.text }}>
+            {new Date(date + "T00:00:00").toLocaleDateString("en-US", {
+              weekday: "short",
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })}
+          </Text>
+          <Text style={{ fontSize: 16, color: C.textTertiary }}>📅</Text>
+        </TouchableOpacity>
+
+        {showDatePicker && (
+          <View style={{ marginTop: 12, backgroundColor: C.cardBg, borderRadius: 10, padding: 12 }}>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {[-2, -1, 0].map(offset => {
+                const d = new Date();
+                d.setDate(d.getDate() + offset);
+                const dateStr = d.toISOString().slice(0, 10);
+                const label = offset === 0 ? "Today" : offset === -1 ? "Yesterday" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                return (
+                  <TouchableOpacity
+                    key={offset}
+                    onPress={() => { setDate(dateStr); setShowDatePicker(false); }}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 10,
+                      borderRadius: 8,
+                      backgroundColor: date === dateStr ? accent : C.bg,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ fontSize: 13, color: date === dateStr ? "#fff" : C.text, fontWeight: date === dateStr ? "600" : "400" }}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TextInput
+              style={[S.input, { marginTop: 8 }]}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={C.textTertiary}
+              value={date}
+              onChangeText={setDate}
+            />
+          </View>
+        )}
 
         {flash && (
           <Text style={{ textAlign: "center", fontSize: 14, color: flash.ok ? C.green : C.red, marginBottom: 8 }}>

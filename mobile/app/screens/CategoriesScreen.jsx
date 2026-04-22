@@ -11,7 +11,7 @@ const EMOJI_OPTIONS = [
   "🥗","🍰","🚌","🎯","💡","🪴","🎪","🧩","🛒","🏠","💼","📱",
 ];
 
-export function CategoriesScreen({ incomeCategories, expenseCategories, customCats, onCreateCategory, onDeleteCategory, loading }) {
+export function CategoriesScreen({ incomeCategories, expenseCategories, customCats, onCreateCategory, onDeleteCategory, onBack, loading }) {
   const [tab, setTab]           = useState("expense");
   const [showForm, setShowForm] = useState(false);
   const [label, setLabel]       = useState("");
@@ -50,7 +50,14 @@ export function CategoriesScreen({ incomeCategories, expenseCategories, customCa
   const customForTab = customCats.filter(c => c.type === tab);
 
   return (
-    <ScrollView style={S.screen} contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 20, paddingBottom: 48 }}>
+    <ScrollView style={S.screen} contentContainerStyle={{ paddingBottom: 48 }}>
+      {/* Back button */}
+      <TouchableOpacity onPress={onBack} style={{ flexDirection: "row", alignItems: "center", padding: 20, paddingBottom: 10 }}>
+        <Text style={{ fontSize: 20, color: C.text }}>← </Text>
+        <Text style={{ fontSize: 16, color: C.text, fontWeight: "600" }}>Categories</Text>
+      </TouchableOpacity>
+
+      <View style={{ paddingHorizontal: 20 }}>
 
       {feedback && (
         <View style={{
