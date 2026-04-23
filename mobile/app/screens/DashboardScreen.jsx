@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
-import { C, S, fmt, MONTH_SHORT, MONTH_LABELS } from "../../src/utils/theme.js";
+import { useMemo, useState, useRef } from "react";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { fmt, MONTH_SHORT, MONTH_LABELS } from "../../src/utils/theme.js";
+import { useTheme } from "../../src/contexts/ThemeContext.js";
 
 export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMonth, household, getCategoryById, colorMap }) {
+  const { colors: C, styles: S } = useTheme();
   const [selectedYear, setSelectedYear] = useState(() => parseInt(filterMonth.slice(0, 4)));
 
   // Generate list of available years from allEntries
@@ -60,59 +62,67 @@ export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMon
     return Object.entries(map);
   }, [entries, household]);
 
+  // Generate months array (36 months back from now)
+  const monthsData = useMemo(() => {
+    return Array.from({ length: 36 }, (_, i) => {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      return {
+        key: d.toISOString().slice(0, 7),
+        month: d.getMonth(),
+        year: d.getFullYear(),
+      };
+    });
+  }, []);
+
+  // Get current selected month label
+  const selectedMonthLabel = useMemo(() => {
+    const d = new Date(filterMonth + "-01");
+    return `${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}`;
+  }, [filterMonth]);
+
   return (
     <ScrollView style={S.scroll} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
 
-      {/* Month Picker - Large, centered */}
-      <View style={{ alignItems: "center", paddingVertical: 20 }}>
-        <Text style={{ fontSize: 13, color: C.textTertiary, marginBottom: 8 }}>Selected Period</Text>
-        <TouchableOpacity
-          onPress={() => {
-            const d = new Date(filterMonth + "-01");
-            const currentMonth = d.getMonth();
-            const newMonth = (currentMonth + 1) % 12;
-            const newYear = newMonth === 0 ? selectedYear + 1 : selectedYear;
-            setFilterMonth(`${newYear}-${String(newMonth + 1).padStart(2, "0")}`);
-          }}
-          style={{
-            backgroundColor: C.greenLight,
-            paddingHorizontal: 28,
-            paddingVertical: 14,
-            borderRadius: 12,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <Text style={{ fontSize: 22, fontWeight: "700", color: C.greenDark }}>
-            {MONTH_LABELS[new Date(filterMonth + "-01").getMonth()]} {filterMonth.slice(0, 4)}
-          </Text>
-          <Text style={{ fontSize: 18, color: C.greenDark }}>▾</Text>
-        </TouchableOpacity>
+      {/* Selected period header */}
+      <View style={{ paddingTop: 20, paddingBottom: 10, alignItems: "center" }}>
+        <Text style={{ fontSize: 13, color: C.textTertiary, marginBottom: 6 }}>Selected Period</Text>
+        <Text style={{ fontSize: 20, fontWeight: "700", color: C.text }}>{selectedMonthLabel}</Text>
+      </View>
 
-        {/* Month selector */}
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 16, justifyContent: "center" }}>
-          {MONTH_SHORT.map((m, i) => {
-            const monthKey = `${selectedYear}-${String(i + 1).padStart(2, "0")}`;
-            const isActive = monthKey === filterMonth;
+      {/* Horizontal month scroller */}
+      <View style={{ paddingBottom: 20 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 10 }}
+        >
+          {monthsData.map(({ key, month, year }) => {
+            const isActive = key === filterMonth;
             return (
               <TouchableOpacity
-                key={i}
-                onPress={() => setFilterMonth(monthKey)}
+                key={key}
+                onPress={() => setFilterMonth(key)}
                 style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 8,
+                  paddingHorizontal: 18,
+                  paddingVertical: 12,
+                  borderRadius: 10,
                   backgroundColor: isActive ? C.green : C.cardBg,
+                  marginHorizontal: 4,
+                  borderWidth: 0.5,
+                  borderColor: isActive ? C.green : C.border,
                 }}
               >
-                <Text style={{ fontSize: 12, color: isActive ? "#fff" : C.text, fontWeight: isActive ? "600" : "400" }}>
-                  {m}
+                <Text style={{ fontSize: 16, fontWeight: "700", color: isActive ? "#fff" : C.text, marginBottom: 2 }}>
+                  {MONTH_SHORT[month]}
+                </Text>
+                <Text style={{ fontSize: 11, color: isActive ? "#fff" : C.textTertiary, fontWeight: isActive ? "700" : "400" }}>
+                  {year}
                 </Text>
               </TouchableOpacity>
             );
           })}
-        </View>
+        </ScrollView>
       </View>
 
       {/* Balance */}
@@ -139,7 +149,7 @@ export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMon
         <View style={{ marginBottom: 24 }}>
           <Text style={S.sectionTitle}>Expense breakdown</Text>
           <View style={{ flexDirection: "row", gap: 10 }}>
-            <View style={styles.necessityCard}>
+            <View style={{ flex: 1, backgroundColor: "#E6F1FB", borderRadius: 14, padding: 14, borderWidth: 0.5, borderColor: "#B5D4F4" }}>
               <Text style={{ fontSize: 16, marginBottom: 4 }}>🔒</Text>
               <Text style={{ fontSize: 11, color: "#185FA5", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>Necessary</Text>
               <Text style={{ fontSize: 16, fontWeight: "700", fontFamily: "Courier", color: "#185FA5" }}>{fmt(necessityTotals.necessary)}</Text>
@@ -149,7 +159,7 @@ export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMon
                 </Text>
               )}
             </View>
-            <View style={[styles.necessityCard, { backgroundColor: "#FAEEDA", borderColor: "#FAC775" }]}>
+            <View style={{ flex: 1, backgroundColor: "#FAEEDA", borderRadius: 14, padding: 14, borderWidth: 0.5, borderColor: "#FAC775" }}>
               <Text style={{ fontSize: 16, marginBottom: 4 }}>✂️</Text>
               <Text style={{ fontSize: 11, color: "#854F0B", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>Optional</Text>
               <Text style={{ fontSize: 16, fontWeight: "700", fontFamily: "Courier", color: "#854F0B" }}>{fmt(necessityTotals.optional)}</Text>
@@ -174,7 +184,9 @@ export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMon
           <Text style={S.sectionTitle}>By member</Text>
           {memberBreakdown.map(([name, t]) => (
             <View key={name} style={[S.row, { paddingVertical: 9, borderBottomWidth: 0.5, borderBottomColor: C.border }]}>
-              <View style={styles.avatar}><Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text></View>
+              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: C.greenLight, justifyContent: "center", alignItems: "center" }}>
+                <Text style={{ fontSize: 14, fontWeight: "700", color: C.greenDark }}>{name.charAt(0).toUpperCase()}</Text>
+              </View>
               <Text style={[S.body, { flex: 1, marginLeft: 10 }]}>{name}</Text>
               <View style={{ alignItems: "flex-end" }}>
                 {t.income  > 0 && <Text style={{ fontSize: 12, fontFamily: "Courier", color: C.green }}>+{fmt(t.income)}</Text>}
@@ -199,8 +211,8 @@ export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMon
                   <Text style={[S.body, { flex: 1 }]}>{cat.emoji} {cat.label}</Text>
                   <Text style={{ fontSize: 13, fontFamily: "Courier", color: C.textSecondary }}>{fmt(amt)}</Text>
                 </View>
-                <View style={styles.barTrack}>
-                  <View style={[styles.barFill, { width: `${pct * 100}%`, backgroundColor: color }]} />
+                <View style={{ height: 5, borderRadius: 3, backgroundColor: C.bgTertiary, marginTop: 5, overflow: "hidden" }}>
+                  <View style={{ height: "100%", borderRadius: 3, width: `${pct * 100}%`, backgroundColor: color }} />
                 </View>
               </View>
             );
@@ -212,39 +224,57 @@ export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMon
 
       {/* Monthly chart */}
       <View style={{ marginBottom: 20 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        {/* Year header */}
+        <View style={{ alignItems: "center", marginBottom: 12 }}>
           <Text style={S.sectionTitle}>Year Overview</Text>
-          {/* Year selector */}
-          <View style={{ flexDirection: "row", gap: 8 }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", color: C.text, marginTop: 4 }}>{selectedYear}</Text>
+        </View>
+
+        {/* Year horizontal scroller */}
+        {availableYears.length > 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 4, marginBottom: 12 }}
+          >
             {availableYears.map(year => (
               <TouchableOpacity
                 key={year}
                 onPress={() => setSelectedYear(year)}
                 style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
                   borderRadius: 8,
                   backgroundColor: year === selectedYear ? C.green : C.cardBg,
+                  marginHorizontal: 4,
+                  borderWidth: 0.5,
+                  borderColor: year === selectedYear ? C.green : C.border,
                 }}
               >
-                <Text style={{ fontSize: 12, color: year === selectedYear ? "#fff" : C.text, fontWeight: year === selectedYear ? "600" : "400" }}>
+                <Text style={{ fontSize: 13, color: year === selectedYear ? "#fff" : C.text, fontWeight: year === selectedYear ? "600" : "400" }}>
                   {year}
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
-        </View>
+          </ScrollView>
+        )}
+
         <View style={{ flexDirection: "row", alignItems: "flex-end", height: 100, marginBottom: 6 }}>
           {monthlyData.map(({ m, inc, exp }, i) => {
-            const active = i === activeMonth;
+            const active = i === activeMonth && selectedYear === parseInt(filterMonth.slice(0, 4));
+            const monthKey = `${selectedYear}-${String(i + 1).padStart(2, "0")}`;
             return (
-              <View key={m} style={{ flex: 1, alignItems: "center" }}>
+              <TouchableOpacity
+                key={m}
+                onPress={() => setFilterMonth(monthKey)}
+                style={{ flex: 1, alignItems: "center" }}
+              >
                 <View style={{ flex: 1, flexDirection: "row", alignItems: "flex-end", width: "90%", gap: 1 }}>
                   <View style={{ flex: 1, backgroundColor: C.green, opacity: active ? 1 : 0.3, borderRadius: 2, height: `${(inc/maxBar)*100}%` }} />
                   <View style={{ flex: 1, backgroundColor: C.red,   opacity: active ? 1 : 0.3, borderRadius: 2, height: `${(exp/maxBar)*100}%` }} />
                 </View>
                 <Text style={{ fontSize: 7, color: active ? C.text : C.textTertiary, marginTop: 3 }}>{m}</Text>
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -260,11 +290,3 @@ export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMon
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  avatar:         { width: 32, height: 32, borderRadius: 16, backgroundColor: C.greenLight, justifyContent: "center", alignItems: "center" },
-  avatarText:     { fontSize: 14, fontWeight: "700", color: C.greenDark },
-  barTrack:       { height: 5, borderRadius: 3, backgroundColor: C.bgTertiary, marginTop: 5, overflow: "hidden" },
-  barFill:        { height: "100%", borderRadius: 3 },
-  necessityCard:  { flex: 1, backgroundColor: "#E6F1FB", borderRadius: 14, padding: 14, borderWidth: 0.5, borderColor: "#B5D4F4" },
-});

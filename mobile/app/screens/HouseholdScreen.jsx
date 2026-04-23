@@ -1,13 +1,21 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from "react-native";
-import { C, S } from "../../src/utils/theme.js";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { useTheme } from "../../src/contexts/ThemeContext.js";
 
-export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemoveMember, onLeave, onDelete, onRename, onBack }) {
+export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemoveMember, onLeave, onDelete, onRename }) {
+  const { colors: C, styles: S } = useTheme();
   const [view, setView]       = useState("main");
   const [nameInput, setName]  = useState("");
   const [emailInput, setEmail]= useState("");
   const [busy, setBusy]       = useState(false);
   const [feedback, setFeedback] = useState(null);
+
+  const localStyles = {
+    avatar:    { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
+    smallBtn:  { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 0.5, borderColor: C.border, backgroundColor: C.bgSecondary },
+    dangerRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
+    dangerText:{ fontSize: 14, fontWeight: "500", color: C.red },
+  };
 
   const isOwner = household?.ownerUserId === user?.userId;
 
@@ -60,13 +68,10 @@ export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemo
 
   return (
     <ScrollView style={S.screen} contentContainerStyle={{ paddingBottom: 40 }}>
-      {/* Back button */}
-      <TouchableOpacity onPress={onBack} style={{ flexDirection: "row", alignItems: "center", padding: 20, paddingBottom: 10 }}>
-        <Text style={{ fontSize: 20, color: C.text }}>← </Text>
-        <Text style={{ fontSize: 16, color: C.text, fontWeight: "600" }}>Household</Text>
-      </TouchableOpacity>
+      <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
+      {/* Title */}
+      <Text style={[S.h2, { marginBottom: 14 }]}>Household</Text>
 
-      <View style={{ paddingHorizontal: 20 }}>
       {feedback && (
         <View style={{ padding: 12, borderRadius: 10, borderWidth: 0.5, marginBottom: 14, backgroundColor: feedback.ok ? C.greenLight : C.redLight, borderColor: feedback.ok ? C.greenBorder : C.redBorder }}>
           <Text style={{ fontSize: 13, color: feedback.ok ? C.greenDark : C.redDark }}>{feedback.msg}</Text>
@@ -126,7 +131,7 @@ export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemo
           <View style={S.rowBetween}>
             <Text style={S.sectionTitle}>Members</Text>
             {isOwner && (
-              <TouchableOpacity onPress={() => setView(view === "add" ? "main" : "add")} style={styles.smallBtn}>
+              <TouchableOpacity onPress={() => setView(view === "add" ? "main" : "add")} style={localStyles.smallBtn}>
                 <Text style={{ fontSize: 12, color: C.text, fontWeight: "500" }}>{view === "add" ? "Cancel" : "+ Add member"}</Text>
               </TouchableOpacity>
             )}
@@ -153,7 +158,7 @@ export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemo
                 <View key={m.userId}>
                   {i > 0 && <View style={S.divider} />}
                   <View style={[S.row, { padding: 14 }]}>
-                    <View style={[styles.avatar, { backgroundColor: mOwner ? C.greenLight : C.bgTertiary }]}>
+                    <View style={[localStyles.avatar, { backgroundColor: mOwner ? C.greenLight : C.bgTertiary }]}>
                       <Text style={{ fontSize: 15, fontWeight: "700", color: mOwner ? C.greenDark : C.textSecondary }}>{m.name?.charAt(0)?.toUpperCase() || "?"}</Text>
                     </View>
                     <View style={{ flex: 1, marginLeft: 12 }}>
@@ -179,27 +184,21 @@ export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemo
           {/* Danger zone */}
           <View style={{ borderRadius: 14, borderWidth: 0.5, borderColor: C.border, overflow: "hidden" }}>
             {!isOwner && (
-              <TouchableOpacity style={styles.dangerRow} onPress={confirmLeave}>
+              <TouchableOpacity style={localStyles.dangerRow} onPress={confirmLeave}>
                 <Text style={{ fontSize: 17 }}>🚪</Text>
-                <Text style={styles.dangerText}>Leave household</Text>
+                <Text style={localStyles.dangerText}>Leave household</Text>
               </TouchableOpacity>
             )}
             {isOwner && (
-              <TouchableOpacity style={styles.dangerRow} onPress={confirmDelete}>
+              <TouchableOpacity style={localStyles.dangerRow} onPress={confirmDelete}>
                 <Text style={{ fontSize: 17 }}>🗑️</Text>
-                <Text style={styles.dangerText}>Delete household</Text>
+                <Text style={localStyles.dangerText}>Delete household</Text>
               </TouchableOpacity>
             )}
           </View>
         </>
       )}
+      </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  avatar:    { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
-  smallBtn:  { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 0.5, borderColor: C.border, backgroundColor: C.bgSecondary },
-  dangerRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
-  dangerText:{ fontSize: 14, fontWeight: "500", color: C.red },
-});

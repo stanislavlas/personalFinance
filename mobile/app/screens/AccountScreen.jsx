@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from "react-native";
-import { C, S } from "../../src/utils/theme.js";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Switch } from "react-native";
+import { useTheme } from "../../src/contexts/ThemeContext.js";
 
-export function AccountScreen({ user, household, onLogout, onDeleteAccount, onChangePassword, onBack }) {
+export function AccountScreen({ user, household, onLogout, onDeleteAccount, onChangePassword }) {
+  const { isDark, toggleTheme, colors: C, styles: S } = useTheme();
   const [section, setSection]   = useState(null);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw]       = useState("");
@@ -31,17 +32,15 @@ export function AccountScreen({ user, household, onLogout, onDeleteAccount, onCh
 
   return (
     <ScrollView style={S.screen} contentContainerStyle={{ paddingBottom: 48 }}>
-      {/* Back button */}
-      <TouchableOpacity onPress={onBack} style={{ flexDirection: "row", alignItems: "center", padding: 20, paddingBottom: 10 }}>
-        <Text style={{ fontSize: 20, color: C.text }}>← </Text>
-        <Text style={{ fontSize: 16, color: C.text, fontWeight: "600" }}>Account</Text>
-      </TouchableOpacity>
-
-      <View style={{ paddingHorizontal: 20 }}>
+      <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
+      {/* Title */}
+      <Text style={[S.h2, { marginBottom: 20 }]}>Account</Text>
 
       {/* User info */}
       <View style={[S.row, { marginBottom: 28 }]}>
-        <View style={styles.avatar}><Text style={styles.avatarText}>{user?.name?.charAt(0)?.toUpperCase() || "?"}</Text></View>
+        <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: C.greenLight, justifyContent: "center", alignItems: "center" }}>
+          <Text style={{ fontSize: 20, fontWeight: "700", color: C.greenDark }}>{user?.name?.charAt(0)?.toUpperCase() || "?"}</Text>
+        </View>
         <View style={{ marginLeft: 14 }}>
           <Text style={[S.h3]}>{user?.name}</Text>
           <Text style={S.small}>{user?.email}</Text>
@@ -58,6 +57,23 @@ export function AccountScreen({ user, household, onLogout, onDeleteAccount, onCh
           <Text style={{ fontSize: 13, color: feedback.ok ? C.greenDark : C.redDark }}>{feedback.msg}</Text>
         </View>
       )}
+
+      {/* Dark Mode Toggle */}
+      <View style={[S.card, { marginBottom: 12 }]}>
+        <View style={[S.rowBetween, { marginBottom: 4 }]}>
+          <View style={S.row}>
+            <Text style={{ fontSize: 18, marginRight: 12 }}>{isDark ? "🌙" : "☀️"}</Text>
+            <Text style={S.body}>Dark Mode</Text>
+          </View>
+          <Switch
+            value={isDark}
+            onValueChange={toggleTheme}
+            trackColor={{ false: C.bgTertiary, true: C.greenLight }}
+            thumbColor={isDark ? C.green : C.textTertiary}
+          />
+        </View>
+        <Text style={[S.small, { marginLeft: 30 }]}>Switch between light and dark theme</Text>
+      </View>
 
       {/* Change password */}
       <View style={[S.card, { marginBottom: 12 }]}>
@@ -107,8 +123,3 @@ export function AccountScreen({ user, household, onLogout, onDeleteAccount, onCh
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  avatar:     { width: 50, height: 50, borderRadius: 25, backgroundColor: C.greenLight, justifyContent: "center", alignItems: "center" },
-  avatarText: { fontSize: 20, fontWeight: "700", color: C.greenDark },
-});

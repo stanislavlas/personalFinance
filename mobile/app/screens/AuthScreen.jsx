@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
-import { C, S } from "../../src/utils/theme.js";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
+import { useTheme } from "../../src/contexts/ThemeContext.js";
 
 export function AuthScreen({ onLogin, onRegister, loading, error, onClearError }) {
+  const { colors: C, styles: S } = useTheme();
   const [mode, setMode]         = useState("login");
   const [name, setName]         = useState("");
   const [email, setEmail]       = useState("");
@@ -30,25 +31,41 @@ export function AuthScreen({ onLogin, onRegister, loading, error, onClearError }
 
   return (
     <KeyboardAvoidingView style={S.screen} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: 24 }} keyboardShouldPersistTaps="handled">
         {/* Logo */}
-        <Text style={styles.logo}>💰</Text>
+        <Text style={{ fontSize: 48, textAlign: "center", marginBottom: 8 }}>💰</Text>
         <Text style={[S.h1, { textAlign: "center", marginBottom: 4 }]}>Budget</Text>
         <Text style={[S.small, { textAlign: "center", marginBottom: 40 }]}>Personal finance tracker</Text>
 
         {/* Tab toggle */}
-        <View style={styles.tabBar}>
+        <View style={{ flexDirection: "row", backgroundColor: C.bgSecondary, borderRadius: 10, padding: 4, marginBottom: 20 }}>
           {["login","register"].map(m => (
-            <TouchableOpacity key={m} style={[styles.tab, mode === m && styles.tabActive]} onPress={() => switchMode(m)}>
-              <Text style={[styles.tabText, mode === m && styles.tabTextActive]}>{m === "login" ? "Sign in" : "Register"}</Text>
+            <TouchableOpacity
+              key={m}
+              style={{
+                flex: 1,
+                paddingVertical: 9,
+                alignItems: "center",
+                borderRadius: 8,
+                backgroundColor: mode === m ? C.bg : "transparent",
+                shadowColor: mode === m ? "#000" : "transparent",
+                shadowOpacity: mode === m ? 0.08 : 0,
+                shadowRadius: mode === m ? 3 : 0,
+                shadowOffset: mode === m ? { width: 0, height: 1 } : { width: 0, height: 0 },
+              }}
+              onPress={() => switchMode(m)}
+            >
+              <Text style={{ fontSize: 14, fontWeight: mode === m ? "600" : "400", color: mode === m ? C.text : C.textTertiary }}>
+                {m === "login" ? "Sign in" : "Register"}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Error */}
         {displayError && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{displayError}</Text>
+          <View style={{ backgroundColor: C.redLight, borderRadius: 10, borderWidth: 0.5, borderColor: C.redBorder, padding: 12, marginBottom: 16 }}>
+            <Text style={{ fontSize: 13, color: C.redDark }}>{displayError}</Text>
           </View>
         )}
 
@@ -84,15 +101,3 @@ export function AuthScreen({ onLogin, onRegister, loading, error, onClearError }
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container:   { flexGrow: 1, justifyContent: "center", padding: 24 },
-  logo:        { fontSize: 48, textAlign: "center", marginBottom: 8 },
-  tabBar:      { flexDirection: "row", backgroundColor: C.bgSecondary, borderRadius: 10, padding: 4, marginBottom: 20 },
-  tab:         { flex: 1, paddingVertical: 9, alignItems: "center", borderRadius: 8 },
-  tabActive:   { backgroundColor: C.bg, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
-  tabText:     { fontSize: 14, fontWeight: "400", color: C.textTertiary },
-  tabTextActive: { fontWeight: "600", color: C.text },
-  errorBox:    { backgroundColor: C.redLight, borderRadius: 10, borderWidth: 0.5, borderColor: C.redBorder, padding: 12, marginBottom: 16 },
-  errorText:   { fontSize: 13, color: C.redDark },
-});

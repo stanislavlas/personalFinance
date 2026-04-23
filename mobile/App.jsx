@@ -1,10 +1,11 @@
 import "react-native-gesture-handler";
 import { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator, ScrollView, Alert } from "react-native";
+import { View, Text, TouchableOpacity, StatusBar, ActivityIndicator, ScrollView } from "react-native";
 import { useAuth }         from "./src/hooks/useAuth.js";
 import { useEntries }      from "./src/hooks/useEntries.js";
 import { useHousehold }    from "./src/hooks/useHousehold.js";
 import { useCategories }   from "./src/hooks/useCategories.js";
+import { ThemeProvider, useTheme } from "./src/contexts/ThemeContext.js";
 import { AuthScreen }        from "./app/screens/AuthScreen.jsx";
 import { DashboardScreen }   from "./app/screens/DashboardScreen.jsx";
 import { AddScreen }         from "./app/screens/AddScreen.jsx";
@@ -12,7 +13,7 @@ import { HistoryScreen }     from "./app/screens/HistoryScreen.jsx";
 import { HouseholdScreen }   from "./app/screens/HouseholdScreen.jsx";
 import { CategoriesScreen }  from "./app/screens/CategoriesScreen.jsx";
 import { AccountScreen }     from "./app/screens/AccountScreen.jsx";
-import { C, MONTH_LABELS }   from "./src/utils/theme.js";
+import { MONTH_LABELS }   from "./src/utils/theme.js";
 
 const TABS = [
   { id: "dashboard",  label: "Overview",    emoji: "📊" },
@@ -30,7 +31,8 @@ function buildMonths() {
   });
 }
 
-export default function App() {
+function AppContent() {
+  const { isDark, colors: C, styles: S } = useTheme();
   const [appError, setAppError] = useState(null);
 
   // Global error handler
@@ -113,13 +115,28 @@ export default function App() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: StatusBar.currentHeight || 0 }}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.bg} translucent={false} />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={C.bg} translucent={false} />
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        borderBottomWidth: 0.5,
+        borderBottomColor: C.border,
+      }}>
         <View>
           {household && (
-            <View style={styles.householdBadge}>
+            <View style={{
+              backgroundColor: C.greenLight,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 8,
+              borderWidth: 0.5,
+              borderColor: C.greenBorder,
+            }}>
               <Text style={{ fontSize: 11, color: C.greenDark }}>🏠 {household.name}</Text>
             </View>
           )}
@@ -129,12 +146,22 @@ export default function App() {
 
       {/* Month picker - moved to dashboard */}
       {showMonthPicker && tab === "dashboard" && (
-        <View style={styles.monthPicker}>
+        <View style={{
+          backgroundColor: C.cardBg,
+          borderBottomWidth: 0.5,
+          borderBottomColor: C.border,
+          maxHeight: 300,
+        }}>
           <ScrollView>
             {months.map(m => {
               const md = new Date(m + "-01");
               return (
-                <TouchableOpacity key={m} style={[styles.monthOption, m === filterMonth && { backgroundColor: C.greenLight }]}
+                <TouchableOpacity key={m} style={[{
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
+                  borderBottomWidth: 0.5,
+                  borderBottomColor: C.border,
+                }, m === filterMonth && { backgroundColor: C.greenLight }]}
                   onPress={() => { setFilterMonth(m); setShowMonthPicker(false); }}>
                   <Text style={{ fontSize: 14, color: m === filterMonth ? C.greenDark : C.text, fontWeight: m === filterMonth ? "600" : "400" }}>
                     {MONTH_LABELS[md.getMonth()]} {md.getFullYear()}
@@ -148,7 +175,13 @@ export default function App() {
 
       {/* Error banner */}
       {entriesError && (
-        <View style={styles.errorBanner}>
+        <View style={{
+          backgroundColor: C.redLight,
+          paddingHorizontal: 20,
+          paddingVertical: 10,
+          borderBottomWidth: 0.5,
+          borderBottomColor: C.redBorder,
+        }}>
           <Text style={{ fontSize: 13, color: C.redDark }}>⚠ {entriesError} — showing cached data</Text>
         </View>
       )}
@@ -169,39 +202,71 @@ export default function App() {
           <AddScreen onAdd={addEntry} authorName={user?.name} currency={user?.currency} incomeCategories={incomeCategories} expenseCategories={expenseCategories} colorMap={colorMap} />
         )}
         {tab === "history" && (
-          <HistoryScreen entries={entries} onDelete={removeEntry} onUpdate={updateEntry} household={household} onBack={() => setTab("dashboard")} {...catProps} />
+          <HistoryScreen entries={entries} onDelete={removeEntry} onUpdate={updateEntry} household={household} {...catProps} />
         )}
         {tab === "categories" && (
-          <CategoriesScreen incomeCategories={incomeCategories} expenseCategories={expenseCategories} customCats={customCats} onCreateCategory={createCategory} onDeleteCategory={deleteCategory} onBack={() => setTab("dashboard")} />
+          <CategoriesScreen incomeCategories={incomeCategories} expenseCategories={expenseCategories} customCats={customCats} onCreateCategory={createCategory} onDeleteCategory={deleteCategory} />
         )}
         {tab === "household" && (
-          <HouseholdScreen household={household} user={user} onCreate={createHousehold} onAddMember={addMember} onRemoveMember={removeMember} onLeave={leaveHousehold} onDelete={deleteHousehold} onRename={renameHousehold} onBack={() => setTab("dashboard")} />
+          <HouseholdScreen household={household} user={user} onCreate={createHousehold} onAddMember={addMember} onRemoveMember={removeMember} onLeave={leaveHousehold} onDelete={deleteHousehold} onRename={renameHousehold} />
         )}
         {tab === "account" && (
-          <AccountScreen user={user} household={household} onLogout={logout} onDeleteAccount={deleteAccount} onChangePassword={changePassword} onBack={() => setTab("dashboard")} />
+          <AccountScreen user={user} household={household} onLogout={logout} onDeleteAccount={deleteAccount} onChangePassword={changePassword} />
         )}
       </View>
 
       {/* Bottom tab bar */}
-      <View style={styles.tabBar}>
+      <View style={{
+        flexDirection: "row",
+        backgroundColor: C.cardBg,
+        borderTopWidth: 0.5,
+        borderTopColor: C.border,
+        paddingBottom: 8,
+        paddingTop: 8,
+      }}>
         {TABS.map(t => {
           const active = tab === t.id;
           return (
             <TouchableOpacity
-              key={t.id} style={styles.tabItem}
+              key={t.id} style={{
+                flex: 1,
+                alignItems: "center",
+                paddingVertical: 8,
+                position: "relative",
+              }}
               onPress={() => { setTab(t.id); setShowMonthPicker(false); }}
               activeOpacity={0.7}
             >
               <View style={{ position: "relative" }}>
                 <Text style={{ fontSize: 18 }}>{t.emoji}</Text>
                 {t.id === "household" && household && (
-                  <View style={styles.dot} />
+                  <View style={{
+                    position: "absolute",
+                    top: -2,
+                    right: -2,
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: C.green,
+                  }} />
                 )}
               </View>
-              <Text style={[styles.tabLabel, { color: active ? C.text : C.textTertiary, fontWeight: active ? "700" : "400" }]}>
+              <Text style={{
+                fontSize: 10,
+                marginTop: 3,
+                color: active ? C.text : C.textTertiary,
+                fontWeight: active ? "700" : "400"
+              }}>
                 {t.label}
               </Text>
-              {active && <View style={styles.tabIndicator} />}
+              {active && <View style={{
+                position: "absolute",
+                bottom: 0,
+                width: 32,
+                height: 2.5,
+                backgroundColor: C.green,
+                borderRadius: 2,
+              }} />}
             </TouchableOpacity>
           );
         })}
@@ -210,16 +275,10 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
-  header:         { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: "rgba(0,0,0,0.08)" },
-  headerTitle:    { flexDirection: "row", alignItems: "center", gap: 8 },
-  householdBadge: { backgroundColor: C.greenLight, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 0.5, borderColor: C.greenBorder },
-  monthPicker:    { position: "absolute", top: 70, left: 20, right: 20, backgroundColor: C.bg, borderRadius: 14, borderWidth: 0.5, borderColor: C.border, zIndex: 100, maxHeight: 300, shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
-  monthOption:    { paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 0.5, borderBottomColor: "rgba(0,0,0,0.05)" },
-  errorBanner:    { marginHorizontal: 20, marginTop: 8, padding: 10, borderRadius: 10, backgroundColor: C.redLight, borderWidth: 0.5, borderColor: C.redBorder },
-  tabBar:         { flexDirection: "row", borderTopWidth: 0.5, borderTopColor: "rgba(0,0,0,0.08)", backgroundColor: C.bg, paddingBottom: 4 },
-  tabItem:        { flex: 1, alignItems: "center", paddingTop: 8, paddingBottom: 4, gap: 2, position: "relative" },
-  tabLabel:       { fontSize: 9 },
-  tabIndicator:   { position: "absolute", bottom: 0, width: 18, height: 2.5, borderRadius: 2, backgroundColor: C.text },
-  dot:            { position: "absolute", top: -2, right: -4, width: 7, height: 7, borderRadius: 4, backgroundColor: C.green, borderWidth: 1.5, borderColor: C.bg },
-});
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}

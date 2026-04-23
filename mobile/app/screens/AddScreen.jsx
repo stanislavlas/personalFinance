@@ -1,12 +1,13 @@
 import { useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
+  ActivityIndicator, KeyboardAvoidingView, Platform,
 } from "react-native";
-import { C, S } from "../../src/utils/theme.js";
+import { useTheme } from "../../src/contexts/ThemeContext.js";
 import { toApiTransactionType, toApiNecessity } from "../../src/utils/enums.js";
 
 export function AddScreen({ onAdd, authorName, currency = "EUR", incomeCategories, expenseCategories, colorMap }) {
+  const { colors: C, styles: S } = useTheme();
   const [type, setType]         = useState("expense");
   const [amount, setAmount]     = useState("");
   const [category, setCategory] = useState(() => expenseCategories[0]?.id || expenseCategories[0]?.categoryId || "");
@@ -14,6 +15,7 @@ export function AddScreen({ onAdd, authorName, currency = "EUR", incomeCategorie
   const [note, setNote]         = useState("");
   const [date, setDate]         = useState(new Date().toISOString().slice(0, 10));
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pickerMonth, setPickerMonth] = useState(() => new Date(date + "T00:00:00"));
   const [saving, setSaving]     = useState(false);
   const [flash, setFlash]       = useState(null);
 
@@ -62,14 +64,21 @@ export function AddScreen({ onAdd, authorName, currency = "EUR", incomeCategorie
           {["expense", "income"].map(t => (
             <TouchableOpacity
               key={t} onPress={() => switchType(t)}
-              style={[styles.typeBtn, type === t && {
-                borderColor: t === "income" ? C.green : C.red,
-                backgroundColor: t === "income" ? C.greenLight : C.redLight,
+              style={[{
+                flex: 1,
+                paddingVertical: 13,
+                borderRadius: 12,
+                borderWidth: 1.5,
+                borderColor: type === t ? (t === "income" ? C.green : C.red) : C.border,
+                backgroundColor: type === t ? (t === "income" ? C.greenLight : C.redLight) : C.bgSecondary,
+                alignItems: "center",
               }]}
             >
-              <Text style={[styles.typeBtnText, type === t && {
-                color: t === "income" ? C.greenDark : C.redDark, fontWeight: "700",
-              }]}>
+              <Text style={{
+                fontSize: 14,
+                fontWeight: type === t ? "700" : "400",
+                color: type === t ? (t === "income" ? C.greenDark : C.redDark) : C.textTertiary,
+              }}>
                 {t === "income" ? "💰 Income" : "💸 Expense"}
               </Text>
             </TouchableOpacity>
@@ -92,31 +101,49 @@ export function AddScreen({ onAdd, authorName, currency = "EUR", incomeCategorie
             <View style={[S.row, { gap: 8, marginBottom: 20 }]}>
               <TouchableOpacity
                 onPress={() => setNecessity("necessary")}
-                style={[styles.necessityBtn,
-                  necessity === "necessary" && { borderColor: C.blue, backgroundColor: "#E6F1FB" }
-                ]}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 10,
+                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  borderRadius: 12,
+                  borderWidth: 1.5,
+                  borderColor: necessity === "necessary" ? C.blue : C.border,
+                  backgroundColor: necessity === "necessary" ? "#E6F1FB" : C.bgSecondary,
+                }}
               >
-                <Text style={styles.necessityIcon}>🔒</Text>
+                <Text style={{ fontSize: 20 }}>🔒</Text>
                 <View>
-                  <Text style={[styles.necessityLabel, necessity === "necessary" && { color: "#185FA5", fontWeight: "700" }]}>
+                  <Text style={{ fontSize: 14, fontWeight: necessity === "necessary" ? "700" : "500", color: necessity === "necessary" ? "#185FA5" : C.text }}>
                     Necessary
                   </Text>
-                  <Text style={styles.necessityHint}>Can't cut this</Text>
+                  <Text style={{ fontSize: 11, color: C.textTertiary, marginTop: 1 }}>Can't cut this</Text>
                 </View>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setNecessity("optional")}
-                style={[styles.necessityBtn,
-                  necessity === "optional" && { borderColor: C.amber, backgroundColor: "#FAEEDA" }
-                ]}
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 10,
+                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  borderRadius: 12,
+                  borderWidth: 1.5,
+                  borderColor: necessity === "optional" ? C.amber : C.border,
+                  backgroundColor: necessity === "optional" ? "#FAEEDA" : C.bgSecondary,
+                }}
               >
-                <Text style={styles.necessityIcon}>✂️</Text>
+                <Text style={{ fontSize: 20 }}>✂️</Text>
                 <View>
-                  <Text style={[styles.necessityLabel, necessity === "optional" && { color: "#854F0B", fontWeight: "700" }]}>
+                  <Text style={{ fontSize: 14, fontWeight: necessity === "optional" ? "700" : "500", color: necessity === "optional" ? "#854F0B" : C.text }}>
                     Optional
                   </Text>
-                  <Text style={styles.necessityHint}>Could save here</Text>
+                  <Text style={{ fontSize: 11, color: C.textTertiary, marginTop: 1 }}>Could save here</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -133,9 +160,16 @@ export function AddScreen({ onAdd, authorName, currency = "EUR", incomeCategorie
             return (
               <TouchableOpacity
                 key={catId} onPress={() => setCategory(catId)}
-                style={[styles.chip, active && { borderColor: color, backgroundColor: color + "20" }]}
+                style={{
+                  paddingHorizontal: 13,
+                  paddingVertical: 7,
+                  borderRadius: 20,
+                  borderWidth: 0.5,
+                  borderColor: active ? color : C.border,
+                  backgroundColor: active ? color + "20" : C.bgSecondary,
+                }}
               >
-                <Text style={[styles.chipText, active && { color, fontWeight: "600" }]}>
+                <Text style={{ fontSize: 13, color: active ? color : C.textSecondary, fontWeight: active ? "600" : "400" }}>
                   {cat.emoji} {cat.label}
                 </Text>
               </TouchableOpacity>
@@ -177,39 +211,107 @@ export function AddScreen({ onAdd, authorName, currency = "EUR", incomeCategorie
         </TouchableOpacity>
 
         {showDatePicker && (
-          <View style={{ marginTop: 12, backgroundColor: C.cardBg, borderRadius: 10, padding: 12 }}>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              {[-2, -1, 0].map(offset => {
-                const d = new Date();
-                d.setDate(d.getDate() + offset);
-                const dateStr = d.toISOString().slice(0, 10);
-                const label = offset === 0 ? "Today" : offset === -1 ? "Yesterday" : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                return (
+          <View style={{ marginTop: 12, backgroundColor: C.cardBg, borderRadius: 10, padding: 16, borderWidth: 0.5, borderColor: C.border }}>
+            {/* Month/Year header */}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  const prev = new Date(pickerMonth);
+                  prev.setMonth(prev.getMonth() - 1);
+                  setPickerMonth(prev);
+                }}
+                style={{ padding: 8 }}
+              >
+                <Text style={{ fontSize: 18, color: C.text }}>‹</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: C.text }}>
+                {pickerMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  const next = new Date(pickerMonth);
+                  next.setMonth(next.getMonth() + 1);
+                  setPickerMonth(next);
+                }}
+                style={{ padding: 8 }}
+              >
+                <Text style={{ fontSize: 18, color: C.text }}>›</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Weekday labels */}
+            <View style={{ flexDirection: "row", marginBottom: 8 }}>
+              {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
+                <View key={i} style={{ flex: 1, alignItems: "center" }}>
+                  <Text style={{ fontSize: 11, fontWeight: "600", color: C.textTertiary }}>{day}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Calendar grid */}
+            {(() => {
+              const year = pickerMonth.getFullYear();
+              const month = pickerMonth.getMonth();
+              const firstDay = new Date(year, month, 1).getDay();
+              const daysInMonth = new Date(year, month + 1, 0).getDate();
+              const weeks = [];
+              let week = [];
+
+              // Fill leading empty cells
+              for (let i = 0; i < firstDay; i++) {
+                week.push(<View key={`empty-${i}`} style={{ flex: 1, aspectRatio: 1 }} />);
+              }
+
+              // Fill days
+              for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                const isSelected = dateStr === date;
+                const isToday = dateStr === new Date().toISOString().slice(0, 10);
+
+                week.push(
                   <TouchableOpacity
-                    key={offset}
-                    onPress={() => { setDate(dateStr); setShowDatePicker(false); }}
+                    key={day}
+                    onPress={() => {
+                      setDate(dateStr);
+                      setShowDatePicker(false);
+                    }}
                     style={{
                       flex: 1,
-                      paddingVertical: 10,
-                      borderRadius: 8,
-                      backgroundColor: date === dateStr ? accent : C.bg,
+                      aspectRatio: 1,
+                      justifyContent: "center",
                       alignItems: "center",
+                      borderRadius: 8,
+                      backgroundColor: isSelected ? accent : "transparent",
+                      borderWidth: isToday && !isSelected ? 1 : 0,
+                      borderColor: accent,
                     }}
                   >
-                    <Text style={{ fontSize: 13, color: date === dateStr ? "#fff" : C.text, fontWeight: date === dateStr ? "600" : "400" }}>
-                      {label}
+                    <Text style={{
+                      fontSize: 14,
+                      color: isSelected ? "#fff" : C.text,
+                      fontWeight: isSelected || isToday ? "600" : "400",
+                    }}>
+                      {day}
                     </Text>
                   </TouchableOpacity>
                 );
-              })}
-            </View>
-            <TextInput
-              style={[S.input, { marginTop: 8 }]}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={C.textTertiary}
-              value={date}
-              onChangeText={setDate}
-            />
+
+                if (week.length === 7) {
+                  weeks.push(<View key={`week-${weeks.length}`} style={{ flexDirection: "row", marginBottom: 4 }}>{week}</View>);
+                  week = [];
+                }
+              }
+
+              // Fill trailing empty cells
+              while (week.length > 0 && week.length < 7) {
+                week.push(<View key={`empty-end-${week.length}`} style={{ flex: 1, aspectRatio: 1 }} />);
+              }
+              if (week.length > 0) {
+                weeks.push(<View key={`week-${weeks.length}`} style={{ flexDirection: "row", marginBottom: 4 }}>{week}</View>);
+              }
+
+              return weeks;
+            })()}
           </View>
         )}
 
@@ -232,14 +334,3 @@ export function AddScreen({ onAdd, authorName, currency = "EUR", incomeCategorie
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  typeBtn:        { flex: 1, paddingVertical: 13, borderRadius: 12, borderWidth: 1.5, borderColor: C.border, backgroundColor: C.bgSecondary, alignItems: "center" },
-  typeBtnText:    { fontSize: 14, fontWeight: "400", color: C.textTertiary },
-  chip:           { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, borderWidth: 0.5, borderColor: C.border, backgroundColor: C.bgSecondary },
-  chipText:       { fontSize: 13, color: C.textSecondary },
-  necessityBtn:   { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, borderColor: C.border, backgroundColor: C.bgSecondary },
-  necessityIcon:  { fontSize: 20 },
-  necessityLabel: { fontSize: 14, fontWeight: "500", color: C.text },
-  necessityHint:  { fontSize: 11, color: C.textTertiary, marginTop: 1 },
-});

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from "react-native";
-import { C, S, fmt } from "../../src/utils/theme.js";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { fmt } from "../../src/utils/theme.js";
+import { useTheme } from "../../src/contexts/ThemeContext.js";
 import { toApiNecessity } from "../../src/utils/enums.js";
 
 const NECESSITY_STYLE = {
@@ -8,11 +9,23 @@ const NECESSITY_STYLE = {
   optional:  { bg: "#FAEEDA", color: "#854F0B", label: "✂️ Optional"  },
 };
 
-export function HistoryScreen({ entries, onDelete, onUpdate, household, onBack, incomeCategories, allCategories, colorMap, getCategoryById }) {
+export function HistoryScreen({ entries, onDelete, onUpdate, household, incomeCategories, allCategories, colorMap, getCategoryById }) {
+  const { colors: C, styles: S } = useTheme();
   const [expandedId, setExpandedId] = useState(null);
   const [search, setSearch]         = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [necessityFilter, setNecessityFilter] = useState("all"); // "all" | "necessary" | "optional"
+
+  const localStyles = {
+    searchRow:     { flexDirection: "row", alignItems: "center", backgroundColor: C.bgSecondary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 0.5, borderColor: C.border },
+    chip:          { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 0.5, borderColor: C.border, backgroundColor: C.bgSecondary },
+    chipText:      { fontSize: 12, color: C.textTertiary },
+    entryRow:      { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13 },
+    catIcon:       { width: 40, height: 40, borderRadius: 11, justifyContent: "center", alignItems: "center", flexShrink: 0 },
+    amount:        { fontSize: 15, fontFamily: "Courier", fontWeight: "700", flexShrink: 0 },
+    deleteBtn:     { alignSelf: "flex-start", borderWidth: 0.5, borderColor: C.red, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
+    necessityBtn:  { flex: 1, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: C.border, alignItems: "center" },
+  };
 
   const filtered = useMemo(() => {
     let list = entries;
@@ -42,15 +55,12 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, onBack, 
 
   return (
     <View style={S.screen}>
-      {/* Back button */}
-      <TouchableOpacity onPress={onBack} style={{ flexDirection: "row", alignItems: "center", padding: 20, paddingBottom: 10 }}>
-        <Text style={{ fontSize: 20, color: C.text }}>← </Text>
-        <Text style={{ fontSize: 16, color: C.text, fontWeight: "600" }}>History</Text>
-      </TouchableOpacity>
+      <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
+        {/* Title */}
+        <Text style={[S.h2, { marginBottom: 14 }]}>History</Text>
 
-      <View style={{ paddingHorizontal: 20, paddingTop: 14 }}>
         {/* Search */}
-        <View style={styles.searchRow}>
+        <View style={localStyles.searchRow}>
           <Text style={{ fontSize: 16, marginRight: 8 }}>🔍</Text>
           <TextInput
             style={{ flex: 1, fontSize: 14, color: C.text }}
@@ -69,11 +79,11 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, onBack, 
           <View style={[S.row, { gap: 6, paddingBottom: 4 }]}>
             {["all","income","expense"].map(t => (
               <TouchableOpacity key={t} onPress={() => setTypeFilter(t)}
-                style={[styles.chip, typeFilter === t && {
+                style={[localStyles.chip, typeFilter === t && {
                   backgroundColor: t === "income" ? C.greenLight : t === "expense" ? C.redLight : C.bgTertiary,
                   borderColor:     t === "income" ? C.green      : t === "expense" ? C.red      : C.borderMed,
                 }]}>
-                <Text style={[styles.chipText, typeFilter === t && {
+                <Text style={[localStyles.chipText, typeFilter === t && {
                   fontWeight: "600",
                   color: t === "income" ? C.greenDark : t === "expense" ? C.redDark : C.text,
                 }]}>
@@ -87,11 +97,11 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, onBack, 
             {/* Necessity filter — only useful when showing expenses */}
             {["all","necessary","optional"].map(n => (
               <TouchableOpacity key={n} onPress={() => setNecessityFilter(n)}
-                style={[styles.chip, necessityFilter === n && {
+                style={[localStyles.chip, necessityFilter === n && {
                   backgroundColor: n === "necessary" ? "#E6F1FB" : n === "optional" ? "#FAEEDA" : C.bgTertiary,
                   borderColor:     n === "necessary" ? C.blue    : n === "optional" ? C.amber   : C.borderMed,
                 }]}>
-                <Text style={[styles.chipText, necessityFilter === n && { fontWeight: "600",
+                <Text style={[localStyles.chipText, necessityFilter === n && { fontWeight: "600",
                   color: n === "necessary" ? "#185FA5" : n === "optional" ? "#854F0B" : C.text,
                 }]}>
                   {n === "all" ? "All types" : n === "necessary" ? "🔒 Necessary" : "✂️ Optional"}
@@ -122,11 +132,11 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, onBack, 
           return (
             <View key={entry.entryId} style={{ borderBottomWidth: 0.5, borderBottomColor: C.border }}>
               <TouchableOpacity
-                style={styles.entryRow}
+                style={localStyles.entryRow}
                 onPress={() => setExpandedId(expanded ? null : entry.entryId)}
                 activeOpacity={0.7}
               >
-                <View style={[styles.catIcon, { backgroundColor: color + "20" }]}>
+                <View style={[localStyles.catIcon, { backgroundColor: color + "20" }]}>
                   <Text style={{ fontSize: 18 }}>{cat.emoji}</Text>
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
@@ -148,7 +158,7 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, onBack, 
                     {household && entry.authorName ? ` · ${entry.authorName}` : ""}
                   </Text>
                 </View>
-                <Text style={[styles.amount, { color: entry.type === "income" ? C.green : C.red }]}>
+                <Text style={[localStyles.amount, { color: entry.type === "income" ? C.green : C.red }]}>
                   {entry.type === "income" ? "+" : "−"}{fmt(entry.amount)}
                 </Text>
               </TouchableOpacity>
@@ -165,7 +175,7 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, onBack, 
                           const nstyle = NECESSITY_STYLE[n];
                           return (
                             <TouchableOpacity key={n} onPress={() => onUpdate({ ...entry, necessity: n })}
-                              style={[styles.necessityBtn, active && { backgroundColor: nstyle.bg, borderColor: n === "necessary" ? C.blue : C.amber }]}>
+                              style={[localStyles.necessityBtn, active && { backgroundColor: nstyle.bg, borderColor: n === "necessary" ? C.blue : C.amber }]}>
                               <Text style={{ fontSize: 12, color: active ? nstyle.color : C.textTertiary, fontWeight: active ? "600" : "400" }}>
                                 {nstyle.label}
                               </Text>
@@ -194,7 +204,7 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, onBack, 
                       );
                     })}
                   </View>
-                  <TouchableOpacity onPress={() => confirmDelete(entry.entryId, entry.note)} style={styles.deleteBtn}>
+                  <TouchableOpacity onPress={() => confirmDelete(entry.entryId, entry.note)} style={localStyles.deleteBtn}>
                     <Text style={{ fontSize: 12, color: C.red }}>Delete</Text>
                   </TouchableOpacity>
                 </View>
@@ -207,13 +217,3 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, onBack, 
   );
 }
 
-const styles = StyleSheet.create({
-  searchRow:     { flexDirection: "row", alignItems: "center", backgroundColor: C.bgSecondary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 0.5, borderColor: C.border },
-  chip:          { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 0.5, borderColor: C.border, backgroundColor: C.bgSecondary },
-  chipText:      { fontSize: 12, color: C.textTertiary },
-  entryRow:      { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13 },
-  catIcon:       { width: 40, height: 40, borderRadius: 11, justifyContent: "center", alignItems: "center", flexShrink: 0 },
-  amount:        { fontSize: 15, fontFamily: "Courier", fontWeight: "700", flexShrink: 0 },
-  deleteBtn:     { alignSelf: "flex-start", borderWidth: 0.5, borderColor: C.red, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
-  necessityBtn:  { flex: 1, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: C.border, alignItems: "center" },
-});

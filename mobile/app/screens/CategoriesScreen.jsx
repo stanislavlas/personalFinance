@@ -1,9 +1,9 @@
 import { useState } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, Alert,
+  ActivityIndicator, Alert,
 } from "react-native";
-import { C, S } from "../../src/utils/theme.js";
+import { useTheme } from "../../src/contexts/ThemeContext.js";
 
 const EMOJI_OPTIONS = [
   "🛍️","🎮","🐾","🌿","🏖️","🎵","🍷","📚","🧘","🚴","🏥","🎁",
@@ -11,13 +11,27 @@ const EMOJI_OPTIONS = [
   "🥗","🍰","🚌","🎯","💡","🪴","🎪","🧩","🛒","🏠","💼","📱",
 ];
 
-export function CategoriesScreen({ incomeCategories, expenseCategories, customCats, onCreateCategory, onDeleteCategory, onBack, loading }) {
+export function CategoriesScreen({ incomeCategories, expenseCategories, customCats, onCreateCategory, onDeleteCategory, loading }) {
+  const { colors: C, styles: S } = useTheme();
   const [tab, setTab]           = useState("expense");
   const [showForm, setShowForm] = useState(false);
   const [label, setLabel]       = useState("");
   const [emoji, setEmoji]       = useState("🛍️");
   const [saving, setSaving]     = useState(false);
   const [feedback, setFeedback] = useState(null);
+
+  const styles = {
+    tabBar:        { flexDirection: "row", backgroundColor: C.bgSecondary, borderRadius: 10, padding: 4, marginBottom: 20 },
+    tab:           { flex: 1, paddingVertical: 9, alignItems: "center", borderRadius: 8 },
+    tabActive:     { backgroundColor: C.bg, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
+    tabText:       { fontSize: 13, color: C.textTertiary },
+    tabTextActive: { fontWeight: "600", color: C.text },
+    addBtn:        { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 0.5, borderColor: C.border, backgroundColor: C.bgSecondary },
+    emojiBtn:      { width: 42, height: 42, borderRadius: 10, borderWidth: 0.5, borderColor: "transparent", justifyContent: "center", alignItems: "center", marginRight: 6 },
+    preview:       { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16, borderWidth: 0.5, borderColor: C.border, backgroundColor: C.bgSecondary },
+    deleteBtn:     { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 0.5, borderColor: C.redBorder },
+    builtInBadge:  { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 5, backgroundColor: C.bgTertiary },
+  };
 
   function flash(ok, msg) {
     setFeedback({ ok, msg });
@@ -46,18 +60,16 @@ export function CategoriesScreen({ incomeCategories, expenseCategories, customCa
     );
   }
 
-  const builtInCats = tab === "income" ? incomeCategories : expenseCategories;
+  const allCatsForTab = tab === "income" ? incomeCategories : expenseCategories;
   const customForTab = customCats.filter(c => c.type === tab);
+  const customIds = new Set(customCats.map(c => c.categoryId));
+  const builtInCats = allCatsForTab.filter(c => !customIds.has(c.id || c.categoryId));
 
   return (
     <ScrollView style={S.screen} contentContainerStyle={{ paddingBottom: 48 }}>
-      {/* Back button */}
-      <TouchableOpacity onPress={onBack} style={{ flexDirection: "row", alignItems: "center", padding: 20, paddingBottom: 10 }}>
-        <Text style={{ fontSize: 20, color: C.text }}>← </Text>
-        <Text style={{ fontSize: 16, color: C.text, fontWeight: "600" }}>Categories</Text>
-      </TouchableOpacity>
-
-      <View style={{ paddingHorizontal: 20 }}>
+      <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
+      {/* Title */}
+      <Text style={[S.h2, { marginBottom: 14 }]}>Categories</Text>
 
       {feedback && (
         <View style={{
@@ -84,7 +96,7 @@ export function CategoriesScreen({ incomeCategories, expenseCategories, customCa
       </View>
 
       {/* Add new category */}
-      <View style={S.rowBetween}>
+      <View style={[S.rowBetween, { marginBottom: 12 }]}>
         <Text style={S.sectionTitle}>Custom categories</Text>
         <TouchableOpacity
           onPress={() => setShowForm(v => !v)}
@@ -171,7 +183,7 @@ export function CategoriesScreen({ incomeCategories, expenseCategories, customCa
       )}
 
       {/* Built-in categories (read-only reference) */}
-      <Text style={S.sectionTitle}>Built-in categories</Text>
+      <Text style={[S.sectionTitle, { marginTop: 8 }]}>Built-in categories</Text>
       <View style={{ borderRadius: 14, borderWidth: 0.5, borderColor: C.border, overflow: "hidden" }}>
         {builtInCats.map((cat, i) => (
           <View key={cat.id}>
@@ -190,16 +202,3 @@ export function CategoriesScreen({ incomeCategories, expenseCategories, customCa
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar:        { flexDirection: "row", backgroundColor: C.bgSecondary, borderRadius: 10, padding: 4, marginBottom: 20 },
-  tab:           { flex: 1, paddingVertical: 9, alignItems: "center", borderRadius: 8 },
-  tabActive:     { backgroundColor: C.bg, shadowColor: "#000", shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
-  tabText:       { fontSize: 13, color: C.textTertiary },
-  tabTextActive: { fontWeight: "600", color: C.text },
-  addBtn:        { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 0.5, borderColor: C.border, backgroundColor: C.bgSecondary },
-  emojiBtn:      { width: 42, height: 42, borderRadius: 10, borderWidth: 0.5, borderColor: "transparent", justifyContent: "center", alignItems: "center", marginRight: 6 },
-  preview:       { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16, borderWidth: 0.5, borderColor: C.border, backgroundColor: C.bgSecondary },
-  deleteBtn:     { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 0.5, borderColor: C.redBorder },
-  builtInBadge:  { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 5, backgroundColor: C.bgTertiary },
-});
