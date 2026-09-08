@@ -8,7 +8,7 @@ export JWT_SECRET
 
 bashio::log.info "Waiting for LocalStack to be reachable..."
 
-until curl -s "http://personalfinance-localstack.local.hass.io:4566" > /dev/null 2>&1; do
+until curl -s "http://localhost:4566" > /dev/null 2>&1; do
     bashio::log.info "LocalStack not reachable yet, retrying in 5s..."
     sleep 5
 done
