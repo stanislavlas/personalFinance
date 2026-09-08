@@ -28,7 +28,7 @@ dependencies {
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
 	runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5") // for JSON processing
 
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.+")
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	runtimeOnly("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
 
 	implementation("aws.sdk.kotlin:dynamodb:1.2.28") { // DynamoDB SDK

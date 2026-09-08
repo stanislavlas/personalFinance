@@ -130,6 +130,37 @@ class EntryRepository(
         return items.map { mapToEntry(it) }
     }
 
+    suspend fun batchSave(entries: List<Entry>) {
+        if (entries.isEmpty()) return
+        // DynamoDB BatchWriteItem limit is 25 items per request
+        entries.chunked(25).forEach { chunk ->
+            val writeRequests = chunk.map { entry ->
+                val item = mutableMapOf(
+                    ENTRY_ID_ATTRIBUTE      to AttributeValue.S(entry.entryId.toString()),
+                    USER_ID_ATTRIBUTE       to AttributeValue.S(entry.userId.toString()),
+                    AMOUNT_VALUE_ATTRIBUTE  to AttributeValue.N(entry.amount.value.toString()),
+                    AMOUNT_CURRENCY_ATTRIBUTE to AttributeValue.S(entry.amount.currency.name),
+                    CATEGORY_ID_ATTRIBUTE   to AttributeValue.S(entry.categoryId.toString()),
+                    DATE_ATTRIBUTE          to AttributeValue.S(entry.date.toString()),
+                    NAME_ATTRIBUTE          to AttributeValue.S(entry.name),
+                    NOTE_ATTRIBUTE          to AttributeValue.S(entry.note),
+                    TYPE_ATTRIBUTE          to AttributeValue.S(entry.type.name),
+                    NECESSITY_ATTRIBUTE     to AttributeValue.S(entry.necessity.name),
+                    AUTHOR_NAME_ATTRIBUTE   to AttributeValue.S(entry.authorName),
+                    CREATED_AT_ATTRIBUTE    to AttributeValue.N(entry.createdAt.epochSecond.toString())
+                )
+                entry.householdId?.let { item[HOUSEHOLD_ID_ATTRIBUTE] = AttributeValue.S(it.toString()) }
+                WriteRequest {
+                    putRequest = PutRequest { this.item = item }
+                }
+            }
+            val request = BatchWriteItemRequest {
+                requestItems = mapOf(ENTRY_TABLE to writeRequests)
+            }
+            dynamoClient.batchWriteItem(request)
+        }
+    }
+
     suspend fun delete(entryId: UUID) {
         val deleteRequest = DeleteItemRequest {
             tableName = ENTRY_TABLE

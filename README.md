@@ -42,6 +42,58 @@ personalFinance/
 
 ---
 
+## Home Assistant Installation
+
+Run the backend and LocalStack as native Home Assistant add-ons (requires HAOS or HA Supervised).
+
+DynamoDB data is persisted to `/data/localstack` on the HA host — it survives add-on restarts and HA reboots.
+
+### 1. Add the Add-on Repository
+
+In HA: **Settings → Add-ons → Add-on Store → three-dot menu → Repositories**
+
+Add: `https://github.com/stanislavlas/personalFinance`
+
+### 2. Install Add-ons (in order)
+
+**Install LocalStack first:**
+1. Click **Personal Finance - LocalStack** → **Install**
+2. Click **Start**
+3. Check the **Log** tab — wait for: `LocalStack ready.`
+
+**Then install the backend:**
+1. Click **Personal Finance - Backend** → **Install**
+2. Go to the **Configuration** tab
+3. Set `jwt_secret` to a random 32+ character string:
+   ```bash
+   openssl rand -base64 32
+   ```
+4. Click **Save** → **Start**
+5. Check the **Log** tab — wait for: `Started PersonalFinanceApplicationKt`
+
+### 3. Configure Mobile App
+
+Set your HA host IP in `mobile/.env`:
+
+```env
+EXPO_PUBLIC_API_BASE_URL=http://<HA_HOST_IP>:8080
+```
+
+**Verify the backend is up:**
+```bash
+curl http://<HA_HOST_IP>:8080/api/categories
+# Expected: 401 Unauthorized (backend is reachable, just needs auth)
+```
+
+### Add-on Port Mapping
+
+| Add-on | Port | Purpose |
+|--------|------|---------|
+| Personal Finance - LocalStack | 4566 | DynamoDB endpoint |
+| Personal Finance - Backend | 8080 | REST API |
+
+---
+
 ## Quick Start
 
 ### Prerequisites
@@ -410,7 +462,7 @@ mobile/
     │   └── useCategories.js
     ├── services/             # API clients
     │   ├── auth.js           # JWT + token refresh
-    │   ├── dynamodb.js       # Entry CRUD
+    │   ├── entries.js        # Entry CRUD
     │   ├── household.js
     │   └── customCategories.js
     └── utils/

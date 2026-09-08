@@ -1,8 +1,10 @@
 package personalFinance.auth
 
 import kotlinx.coroutines.runBlocking
+import org.springframework.http.HttpStatus
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.server.ResponseStatusException
 import personalFinance.common.GetJWTFromAuthHeader
 import personalFinance.models.Currency
 import personalFinance.models.api.AuthUserResponse
@@ -36,7 +38,7 @@ class AuthController(
     fun refreshToken(@RequestBody refreshRequest: RefreshRequest): RefreshResponse {
         val tokens = runBlocking {
             authService.refreshAccessToken(refreshRequest.refreshToken)
-        } ?: throw Exception("Invalid or expired refresh token")
+        } ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired refresh token")
 
         return RefreshResponse(
             accessToken = tokens.first,

@@ -94,6 +94,7 @@ class AuthService(
 
     suspend fun deleteUserAccount(userId: UUID, password: String) {
         val user = dataStore.getUserById(userId)
+            ?: throw Exception("User not found")
 
         val isPasswordMatch = verifyPassword(
             rawPassword = password,
@@ -107,8 +108,8 @@ class AuthService(
         // Revoke all refresh tokens
         refreshTokenService.revokeAllUserTokens(userId)
 
-        // TODO: Delete user data (entries, categories, etc.)
-        // For now, we'll just revoke tokens
+        // Delete user from DynamoDB
+        dataStore.deleteUser(userId)
     }
 
     private fun verifyPassword(rawPassword: String, encodedPassword: String) =

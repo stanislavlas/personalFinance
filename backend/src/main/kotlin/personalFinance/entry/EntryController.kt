@@ -50,6 +50,33 @@ class EntryController(
         }
     }
 
+    @PostMapping("/batch")
+    fun createEntries(
+        @RequestHeader("Authorization") authorization: String,
+        @RequestBody requests: List<CreateEntryRequest>
+    ): List<Entry> {
+        val jwt = GetJWTFromAuthHeader(authorization)
+        val userId = jwtAuth.getUserIdFromJWT(jwt)
+
+        return runBlocking {
+            entryService.createEntries(
+                userId = userId,
+                requests = requests.map { req ->
+                    CreateEntryData(
+                        householdId = req.householdId,
+                        amount = req.amount,
+                        categoryId = req.categoryId,
+                        date = req.date,
+                        name = req.name,
+                        note = req.note,
+                        type = req.type,
+                        necessity = req.necessity
+                    )
+                }
+            )
+        }
+    }
+
     @PostMapping
     fun createEntry(
         @RequestHeader("Authorization") authorization: String,
@@ -121,6 +148,18 @@ class EntryController(
 }
 
 data class CreateEntryRequest(
+    val householdId: String?,
+    val amount: Amount,
+    val categoryId: String,
+    val date: String,
+    val name: String,
+    val note: String?,
+    val type: TransactionType,
+    val necessity: Necessity
+)
+
+/** Shared data carrier used by both single and batch service methods. */
+data class CreateEntryData(
     val householdId: String?,
     val amount: Amount,
     val categoryId: String,

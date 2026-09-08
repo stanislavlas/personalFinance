@@ -2,6 +2,7 @@ package personalFinance.dataStore
 
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
 import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
+import aws.sdk.kotlin.services.dynamodb.model.DeleteItemRequest
 import aws.sdk.kotlin.services.dynamodb.model.GetItemRequest
 import aws.sdk.kotlin.services.dynamodb.model.PutItemRequest
 import aws.sdk.kotlin.services.dynamodb.model.QueryRequest
@@ -58,7 +59,7 @@ class DynamoClient(
         val item = dynamoClient.getItem(request).item
 
         if (item.isNullOrEmpty()) {
-            throw Exception("User with id: $userId does not exists")
+            throw Exception("User not found")
         }
 
         val data = item[DATA_ATTRIBUTE]?.asS() ?: throw Exception("User with id: $userId contains incorrect data")
@@ -76,5 +77,14 @@ class DynamoClient(
         }
 
         dynamoClient.putItem(request)
+    }
+
+    override suspend fun deleteUser(userId: UUID) {
+        val request = DeleteItemRequest {
+            tableName = USER_TABLE_NAME
+            key = mapOf(USER_ID_ATTRIBUTE to AttributeValue.S(userId.toString()))
+        }
+
+        dynamoClient.deleteItem(request)
     }
 }

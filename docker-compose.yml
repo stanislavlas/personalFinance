@@ -1,9 +1,9 @@
 services:
-  localstack:
+  mylocalstack:
     image: localstack/localstack:latest
-    container_name: localstack
+    container_name: myLocalstack
     ports:
-      - "4566:4566"
+      - "4567:4566"
     environment:
       - SERVICES=dynamodb
       - DEFAULT_REGION=us-west-2

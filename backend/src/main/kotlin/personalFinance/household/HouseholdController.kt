@@ -1,6 +1,7 @@
 package personalFinance.household
 
 import kotlinx.coroutines.runBlocking
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import personalFinance.auth.JwtAuth
 import personalFinance.common.GetJWTFromAuthHeader
@@ -17,13 +18,16 @@ class HouseholdController(
     @GetMapping
     fun getHousehold(
         @RequestHeader("Authorization") authorization: String
-    ): Household? {
+    ): ResponseEntity<Household> {
         val jwt = GetJWTFromAuthHeader(authorization)
         val userId = jwtAuth.getUserIdFromJWT(jwt)
 
-        return runBlocking {
+        val household = runBlocking {
             householdService.getHouseholdByUserId(userId)
         }
+
+        return if (household != null) ResponseEntity.ok(household)
+        else ResponseEntity.noContent().build()
     }
 
     @PostMapping

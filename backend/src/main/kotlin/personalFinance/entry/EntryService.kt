@@ -38,6 +38,42 @@ class EntryService(
         }
     }
 
+    suspend fun createEntries(
+        userId: UUID,
+        requests: List<CreateEntryData>
+    ): List<Entry> {
+        val user = dataStoreClient.getUserById(userId)
+
+        val entries = requests.map { req ->
+            val householdUUID = req.householdId?.let { UUID.fromString(it) }
+
+            if (householdUUID != null) {
+                val household = householdRepository.findById(householdUUID)
+                    ?: throw Exception("Household not found")
+                if (!household.members.any { it.userId == userId }) {
+                    throw Exception("User is not a member of this household")
+                }
+            }
+
+            Entry(
+                entryId = UUID.randomUUID(),
+                userId = userId,
+                householdId = householdUUID,
+                amount = req.amount,
+                categoryId = UUID.fromString(req.categoryId),
+                date = LocalDate.parse(req.date),
+                name = req.name,
+                note = req.note ?: "",
+                type = req.type,
+                necessity = req.necessity,
+                authorName = user.name
+            )
+        }
+
+        entryRepository.batchSave(entries)
+        return entries
+    }
+
     suspend fun createEntry(
         userId: UUID,
         householdId: UUID?,
