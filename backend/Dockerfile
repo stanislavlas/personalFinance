@@ -14,8 +14,7 @@ COPY src/ src/
 RUN ./gradlew bootJar --no-daemon
 
 # Stage 2: Runtime on HA base image
-ARG BUILD_FROM
-FROM $BUILD_FROM
+FROM ghcr.io/home-assistant/base:latest
 
 # Install JRE 17
 RUN apk add --no-cache openjdk17-jre-headless
