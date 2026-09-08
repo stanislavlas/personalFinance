@@ -6,6 +6,9 @@ import aws.sdk.kotlin.services.dynamodb.model.DeleteItemRequest
 import aws.sdk.kotlin.services.dynamodb.model.GetItemRequest
 import aws.sdk.kotlin.services.dynamodb.model.PutItemRequest
 import aws.sdk.kotlin.services.dynamodb.model.QueryRequest
+import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
+import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
+import aws.smithy.kotlin.runtime.collections.Attributes
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -24,11 +27,16 @@ private const val EMAIL_ATTRIBUTE = "email"
 class DynamoClient(
     @Value("\${aws.region}") val awsRegion: String,
     @Value("\${aws.url}") val url: String,
+    @Value("\${aws.accessKeyId}") val accessKeyId: String,
+    @Value("\${aws.secretAccessKey}") val secretAccessKey: String,
     private val objectMapper: ObjectMapper,
 ): IDataStoreClient {
     private val dynamoClient = DynamoDbClient {
         region = awsRegion
         endpointUrl = Url.parse(url)
+        credentialsProvider = CredentialsProvider { _: Attributes ->
+            Credentials(accessKeyId = accessKeyId, secretAccessKey = secretAccessKey)
+        }
     }
 
     override suspend fun getUserByEmail(email: String): User? {
