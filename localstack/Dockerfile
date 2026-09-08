@@ -1,8 +1,4 @@
-FROM ghcr.io/home-assistant/base:latest
-
-# Install Python, pip, AWS CLI, and LocalStack
-RUN apk add --no-cache python3 py3-pip aws-cli \
-    && pip3 install --break-system-packages localstack
+FROM localstack/localstack:community-archive
 
 # Copy entrypoint and init script
 COPY run.sh /run.sh
