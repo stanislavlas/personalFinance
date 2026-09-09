@@ -1,14 +1,9 @@
 package personalFinance.dataStore
 
+import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
-import aws.sdk.kotlin.services.dynamodb.model.AttributeValue
-import aws.sdk.kotlin.services.dynamodb.model.DeleteItemRequest
-import aws.sdk.kotlin.services.dynamodb.model.GetItemRequest
-import aws.sdk.kotlin.services.dynamodb.model.PutItemRequest
-import aws.sdk.kotlin.services.dynamodb.model.QueryRequest
+import aws.sdk.kotlin.services.dynamodb.model.*
 import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
-import aws.smithy.kotlin.runtime.auth.awscredentials.CredentialsProvider
-import aws.smithy.kotlin.runtime.collections.Attributes
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -34,9 +29,9 @@ class DynamoClient(
     private val dynamoClient = DynamoDbClient {
         region = awsRegion
         endpointUrl = Url.parse(url)
-        credentialsProvider = CredentialsProvider { _: Attributes ->
+        credentialsProvider = StaticCredentialsProvider(
             Credentials(accessKeyId = accessKeyId, secretAccessKey = secretAccessKey)
-        }
+        )
     }
 
     override suspend fun getUserByEmail(email: String): User? {
