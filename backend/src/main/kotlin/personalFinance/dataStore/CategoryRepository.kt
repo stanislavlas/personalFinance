@@ -2,9 +2,7 @@ package personalFinance.dataStore
 
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
 import aws.sdk.kotlin.services.dynamodb.model.*
-import aws.smithy.kotlin.runtime.net.url.Url
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Repository
 import personalFinance.models.TransactionType
 import personalFinance.models.internal.Category
@@ -24,14 +22,9 @@ private const val CREATED_AT_ATTRIBUTE = "createdAt"
 
 @Repository
 class CategoryRepository(
-    @Value("\${aws.region}") val awsRegion: String,
-    @Value("\${aws.url}") val url: String,
+    private val dynamoClient: DynamoDbClient,
     private val objectMapper: ObjectMapper,
 ) {
-    private val dynamoClient = DynamoDbClient {
-        region = awsRegion
-        endpointUrl = Url.parse(url)
-    }
 
     suspend fun save(category: Category) {
         val item = mutableMapOf(

@@ -2,10 +2,8 @@ package personalFinance.dataStore
 
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
 import aws.sdk.kotlin.services.dynamodb.model.*
-import aws.smithy.kotlin.runtime.net.url.Url
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Repository
 import personalFinance.models.Currency
 import personalFinance.models.internal.Household
@@ -25,14 +23,9 @@ private const val INVITE_CODE_ATTRIBUTE = "inviteCode"
 
 @Repository
 class HouseholdRepository(
-    @Value("\${aws.region}") val awsRegion: String,
-    @Value("\${aws.url}") val url: String,
+    private val dynamoClient: DynamoDbClient,
     private val objectMapper: ObjectMapper,
 ) {
-    private val dynamoClient = DynamoDbClient {
-        region = awsRegion
-        endpointUrl = Url.parse(url)
-    }
 
     suspend fun save(household: Household) {
         val item = mutableMapOf(

@@ -1,13 +1,9 @@
 package personalFinance.dataStore
 
-import aws.sdk.kotlin.runtime.auth.credentials.StaticCredentialsProvider
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
 import aws.sdk.kotlin.services.dynamodb.model.*
-import aws.smithy.kotlin.runtime.auth.awscredentials.Credentials
-import aws.smithy.kotlin.runtime.net.url.Url
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import personalFinance.models.internal.User
 import java.util.*
@@ -20,19 +16,9 @@ private const val EMAIL_ATTRIBUTE = "email"
 
 @Component
 class DynamoClient(
-    @Value("\${aws.region}") val awsRegion: String,
-    @Value("\${aws.url}") val url: String,
-    @Value("\${aws.accessKeyId}") val accessKeyId: String,
-    @Value("\${aws.secretAccessKey}") val secretAccessKey: String,
+    private val dynamoClient: DynamoDbClient,
     private val objectMapper: ObjectMapper,
 ): IDataStoreClient {
-    private val dynamoClient = DynamoDbClient {
-        region = awsRegion
-        endpointUrl = Url.parse(url)
-        credentialsProvider = StaticCredentialsProvider(
-            Credentials(accessKeyId = accessKeyId, secretAccessKey = secretAccessKey)
-        )
-    }
 
     override suspend fun getUserByEmail(email: String): User? {
         val queryRequest = QueryRequest {

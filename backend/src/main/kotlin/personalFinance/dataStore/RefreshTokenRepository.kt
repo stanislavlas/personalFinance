@@ -2,9 +2,7 @@ package personalFinance.dataStore
 
 import aws.sdk.kotlin.services.dynamodb.DynamoDbClient
 import aws.sdk.kotlin.services.dynamodb.model.*
-import aws.smithy.kotlin.runtime.net.url.Url
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Repository
 import personalFinance.models.internal.RefreshToken
 import java.time.Instant
@@ -20,14 +18,9 @@ private const val DEVICE_INFO_ATTRIBUTE = "deviceInfo"
 
 @Repository
 class RefreshTokenRepository(
-    @Value("\${aws.region}") val awsRegion: String,
-    @Value("\${aws.url}") val url: String,
+    private val dynamoClient: DynamoDbClient,
     private val objectMapper: ObjectMapper,
 ) {
-    private val dynamoClient = DynamoDbClient {
-        region = awsRegion
-        endpointUrl = Url.parse(url)
-    }
 
     suspend fun save(token: RefreshToken) {
         val item = mutableMapOf(
