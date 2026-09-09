@@ -16,16 +16,23 @@ RUN ./gradlew bootJar --no-daemon
 # Stage 2: Runtime on HA base image
 FROM ghcr.io/home-assistant/base:latest
 
-# Install JRE 21
-RUN apk add --no-cache openjdk21-jre-headless
+# Install JRE 21, Python (needed by LocalStack), AWS CLI, and curl
+RUN apk add --no-cache \
+    openjdk21-jre-headless \
+    python3 \
+    py3-pip \
+    curl \
+    bash \
+    && pip3 install --break-system-packages localstack awscli-local
 
 # Copy built JAR and config
 COPY --from=builder /app/build/libs/*.jar /app/app.jar
 COPY application.properties /app/application.properties
 
-# Copy entrypoint
+# Copy entrypoint and DB init script
 COPY run.sh /run.sh
-RUN chmod +x /run.sh
+COPY init-dynamodb.sh /init-dynamodb.sh
+RUN chmod +x /run.sh /init-dynamodb.sh
 
 WORKDIR /app
 CMD ["/run.sh"]

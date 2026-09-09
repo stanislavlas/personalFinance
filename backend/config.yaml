@@ -11,8 +11,12 @@ arch:
   - amd64
 ports:
   8080/tcp: 8080
+  4566/tcp: 4566
 ports_description:
   8080/tcp: "REST API"
+  4566/tcp: "LocalStack DynamoDB"
+map:
+  - data
 options:
   jwt_secret: "change-me-use-a-random-32-plus-char-string"
 schema:
