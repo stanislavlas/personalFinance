@@ -16,7 +16,10 @@ auth:bearer {
 
 body:json {
   {
-    "amount": 50.00,
+    "amount": {
+      "value": 50.00,
+      "currency": "EUR"
+    },
     "categoryId": "REPLACE_WITH_CATEGORY_ID",
     "date": "2026-04-17",
     "name": "Grocery shopping",
