@@ -1,5 +1,5 @@
 # Stage 1: Build the JAR using standard Gradle image
-FROM gradle:8.5-jdk17 AS builder
+FROM gradle:8.10-jdk21 AS builder
 WORKDIR /app
 
 # Copy Gradle wrapper and build files first (layer cache)
@@ -16,8 +16,8 @@ RUN ./gradlew bootJar --no-daemon
 # Stage 2: Runtime on HA base image
 FROM ghcr.io/home-assistant/base:latest
 
-# Install JRE 17
-RUN apk add --no-cache openjdk17-jre-headless
+# Install JRE 21
+RUN apk add --no-cache openjdk21-jre-headless
 
 # Copy built JAR and config
 COPY --from=builder /app/build/libs/*.jar /app/app.jar
