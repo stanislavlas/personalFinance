@@ -40,6 +40,7 @@ class SecurityConfig(
                     .requestMatchers(
                         "/api/health",
                         "/api/auth/*",
+                        "/api/currencies",
                     ).permitAll()
                     .anyRequest().authenticated()
             }
