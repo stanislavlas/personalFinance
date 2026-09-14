@@ -5,7 +5,6 @@ import aws.sdk.kotlin.services.dynamodb.model.*
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.stereotype.Repository
 import personalFinance.models.Amount
-import personalFinance.models.Currency
 import personalFinance.models.TransactionType
 import personalFinance.models.internal.Entry
 import personalFinance.models.internal.Necessity
@@ -40,7 +39,7 @@ class EntryRepository(
             ENTRY_ID_ATTRIBUTE to AttributeValue.S(entry.entryId.toString()),
             USER_ID_ATTRIBUTE to AttributeValue.S(entry.userId.toString()),
             AMOUNT_VALUE_ATTRIBUTE to AttributeValue.N(entry.amount.value.toString()),
-            AMOUNT_CURRENCY_ATTRIBUTE to AttributeValue.S(entry.amount.currency.name),
+            AMOUNT_CURRENCY_ATTRIBUTE to AttributeValue.S(entry.amount.currency),
             CATEGORY_ID_ATTRIBUTE to AttributeValue.S(entry.categoryId.toString()),
             DATE_ATTRIBUTE to AttributeValue.S(entry.date.toString()),
             NAME_ATTRIBUTE to AttributeValue.S(entry.name),
@@ -132,7 +131,7 @@ class EntryRepository(
                     ENTRY_ID_ATTRIBUTE      to AttributeValue.S(entry.entryId.toString()),
                     USER_ID_ATTRIBUTE       to AttributeValue.S(entry.userId.toString()),
                     AMOUNT_VALUE_ATTRIBUTE  to AttributeValue.N(entry.amount.value.toString()),
-                    AMOUNT_CURRENCY_ATTRIBUTE to AttributeValue.S(entry.amount.currency.name),
+                    AMOUNT_CURRENCY_ATTRIBUTE to AttributeValue.S(entry.amount.currency),
                     CATEGORY_ID_ATTRIBUTE   to AttributeValue.S(entry.categoryId.toString()),
                     DATE_ATTRIBUTE          to AttributeValue.S(entry.date.toString()),
                     NAME_ATTRIBUTE          to AttributeValue.S(entry.name),
@@ -172,7 +171,7 @@ class EntryRepository(
             householdId = householdIdStr?.let { UUID.fromString(it) },
             amount = Amount(
                 value = BigDecimal(item[AMOUNT_VALUE_ATTRIBUTE]?.asN() ?: throw Exception("Missing amount value")),
-                currency = Currency.valueOf(item[AMOUNT_CURRENCY_ATTRIBUTE]?.asS() ?: throw Exception("Missing currency"))
+                currency = item[AMOUNT_CURRENCY_ATTRIBUTE]?.asS() ?: throw Exception("Missing currency")
             ),
             categoryId = UUID.fromString(item[CATEGORY_ID_ATTRIBUTE]?.asS() ?: throw Exception("Missing categoryId")),
             date = LocalDate.parse(item[DATE_ATTRIBUTE]?.asS() ?: throw Exception("Missing date")),

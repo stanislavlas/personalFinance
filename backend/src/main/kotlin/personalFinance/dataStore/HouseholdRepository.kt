@@ -32,7 +32,7 @@ class HouseholdRepository(
             HOUSEHOLD_ID_ATTRIBUTE to AttributeValue.S(household.householdId.toString()),
             NAME_ATTRIBUTE to AttributeValue.S(household.name),
             OWNER_ID_ATTRIBUTE to AttributeValue.S(household.ownerId.toString()),
-            CURRENCY_ATTRIBUTE to AttributeValue.S(household.currency.name),
+            CURRENCY_ATTRIBUTE to AttributeValue.S(household.currency),
             MEMBERS_ATTRIBUTE to AttributeValue.S(objectMapper.writeValueAsString(household.members)),
             CREATED_AT_ATTRIBUTE to AttributeValue.N(household.createdAt.epochSecond.toString())
         )
@@ -90,7 +90,7 @@ class HouseholdRepository(
             householdId = UUID.fromString(item[HOUSEHOLD_ID_ATTRIBUTE]?.asS() ?: throw Exception("Missing householdId")),
             name = item[NAME_ATTRIBUTE]?.asS() ?: throw Exception("Missing name"),
             ownerId = UUID.fromString(item[OWNER_ID_ATTRIBUTE]?.asS() ?: throw Exception("Missing ownerId")),
-            currency = Currency.valueOf(item[CURRENCY_ATTRIBUTE]?.asS() ?: throw Exception("Missing currency")),
+            currency = item[CURRENCY_ATTRIBUTE]?.asS() ?: throw Exception("Missing currency"),
             members = members,
             createdAt = Instant.ofEpochSecond(item[CREATED_AT_ATTRIBUTE]?.asN()?.toLong() ?: throw Exception("Missing createdAt")),
             inviteCode = item[INVITE_CODE_ATTRIBUTE]?.asS()

@@ -4,7 +4,6 @@ import org.springframework.stereotype.Service
 import personalFinance.dataStore.EntryRepository
 import personalFinance.dataStore.HouseholdRepository
 import personalFinance.models.Amount
-import personalFinance.models.Currency
 import personalFinance.models.TransactionType
 import personalFinance.models.api.DashboardResponse
 import personalFinance.models.api.NeedsVsWantsBreakdown
@@ -41,7 +40,7 @@ class DashboardService(
         }
 
         // Determine currency from first entry or default to EUR
-        val currency = entries.firstOrNull()?.amount?.currency ?: Currency.EUR
+        val currency = entries.firstOrNull()?.amount?.currency ?: "EUR"
 
         // Calculate totals by type
         val income = entries.filter { it.type == TransactionType.INCOME }
