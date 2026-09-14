@@ -4,6 +4,7 @@ import kotlinx.coroutines.runBlocking
 import org.springframework.web.bind.annotation.*
 import personalFinance.auth.JwtAuth
 import personalFinance.common.GetJWTFromAuthHeader
+import personalFinance.dataStore.IDataStoreClient
 import personalFinance.models.Amount
 import personalFinance.models.TransactionType
 import personalFinance.models.internal.Entry
@@ -15,7 +16,8 @@ import java.util.*
 @RequestMapping("/api/entries")
 class EntryController(
     private val entryService: EntryService,
-    private val jwtAuth: JwtAuth
+    private val jwtAuth: JwtAuth,
+    private val dataStoreClient: IDataStoreClient,
 ) {
     @GetMapping
     fun getEntries(
@@ -41,11 +43,13 @@ class EntryController(
         }
 
         return runBlocking {
+            val user = dataStoreClient.getUserById(userId)
             entryService.getEntries(
                 userId = userId,
                 householdId = householdUUID,
                 fromDate = fromDate,
-                toDate = toDate
+                toDate = toDate,
+                targetCurrency = user.currency,
             )
         }
     }

@@ -4,6 +4,7 @@ import kotlinx.coroutines.runBlocking
 import org.springframework.web.bind.annotation.*
 import personalFinance.auth.JwtAuth
 import personalFinance.common.GetJWTFromAuthHeader
+import personalFinance.dataStore.IDataStoreClient
 import personalFinance.models.api.DashboardResponse
 import java.time.LocalDate
 import java.util.*
@@ -12,7 +13,8 @@ import java.util.*
 @RequestMapping("/api/dashboard")
 class DashboardController(
     private val dashboardService: DashboardService,
-    private val jwtAuth: JwtAuth
+    private val jwtAuth: JwtAuth,
+    private val dataStoreClient: IDataStoreClient,
 ) {
     @GetMapping
     fun getDashboard(
@@ -27,11 +29,13 @@ class DashboardController(
         val householdUUID = householdId?.let { UUID.fromString(it) }
 
         return runBlocking {
+            val user = dataStoreClient.getUserById(userId)
             dashboardService.getDashboard(
                 userId = userId,
                 householdId = householdUUID,
                 fromDate = LocalDate.parse(fromDate),
-                toDate = LocalDate.parse(toDate)
+                toDate = LocalDate.parse(toDate),
+                targetCurrency = user.currency,
             )
         }
     }

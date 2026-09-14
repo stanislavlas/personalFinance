@@ -1,6 +1,7 @@
 package personalFinance.dashboard
 
 import org.springframework.stereotype.Service
+import personalFinance.currency.CurrencyConversionService
 import personalFinance.dataStore.EntryRepository
 import personalFinance.dataStore.HouseholdRepository
 import personalFinance.models.Amount
@@ -16,16 +17,18 @@ import java.util.*
 @Service
 class DashboardService(
     private val entryRepository: EntryRepository,
-    private val householdRepository: HouseholdRepository
+    private val householdRepository: HouseholdRepository,
+    private val currencyConversionService: CurrencyConversionService,
 ) {
     suspend fun getDashboard(
         userId: UUID,
         householdId: UUID?,
         fromDate: LocalDate,
-        toDate: LocalDate
+        toDate: LocalDate,
+        targetCurrency: String,
     ): DashboardResponse {
-        // Get entries
-        val entries = if (householdId != null) {
+        // Get raw entries
+        val rawEntries = if (householdId != null) {
             // Verify user is member
             val household = householdRepository.findById(householdId)
                 ?: throw Exception("Household not found")
@@ -39,8 +42,12 @@ class DashboardService(
             entryRepository.findByUserId(userId, fromDate, toDate)
         }
 
-        // Determine currency from first entry or default to EUR
-        val currency = entries.firstOrNull()?.amount?.currency ?: "EUR"
+        // Convert all entries to the user's preferred currency
+        val entries = rawEntries.map { entry ->
+            entry.copy(amount = currencyConversionService.convertAmount(entry.amount, targetCurrency))
+        }
+
+        val currency = targetCurrency
 
         // Calculate totals by type
         val income = entries.filter { it.type == TransactionType.INCOME }

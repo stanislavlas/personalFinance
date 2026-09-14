@@ -23,9 +23,10 @@ class EntryService(
         userId: UUID,
         householdId: UUID?,
         fromDate: LocalDate?,
-        toDate: LocalDate?
+        toDate: LocalDate?,
+        targetCurrency: String,
     ): List<Entry> {
-        return if (householdId != null) {
+        val entries = if (householdId != null) {
             // Verify user is member of household
             val household = householdRepository.findById(householdId)
                 ?: throw Exception("Household not found")
@@ -37,6 +38,10 @@ class EntryService(
             entryRepository.findByHouseholdId(householdId, fromDate, toDate)
         } else {
             entryRepository.findByUserId(userId, fromDate, toDate)
+        }
+
+        return entries.map { entry ->
+            entry.copy(amount = currencyConversionService.convertAmount(entry.amount, targetCurrency))
         }
     }
 
