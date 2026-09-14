@@ -1,14 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useTheme } from "../../src/contexts/ThemeContext.js";
 
-export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemoveMember, onLeave, onDelete, onRename }) {
+export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemoveMember, onLeave, onDelete, onRename, autoOpenAddMember }) {
   const { colors: C, styles: S } = useTheme();
   const [view, setView]       = useState("main");
   const [nameInput, setName]  = useState("");
   const [emailInput, setEmail]= useState("");
   const [busy, setBusy]       = useState(false);
   const [feedback, setFeedback] = useState(null);
+
+  // Auto-open add member form if flag is set
+  useEffect(() => {
+    if (autoOpenAddMember && household) {
+      setView("add");
+    }
+  }, [autoOpenAddMember, household]);
 
   const localStyles = {
     avatar:    { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
@@ -17,7 +24,7 @@ export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemo
     dangerText:{ fontSize: 14, fontWeight: "500", color: C.red },
   };
 
-  const isOwner = household?.ownerUserId === user?.userId;
+  const isOwner = household?.ownerId === user?.userId;
 
   function flash(ok, msg) { setFeedback({ ok, msg }); if (ok) setTimeout(() => setFeedback(null), 2500); }
 
@@ -45,9 +52,34 @@ export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemo
   }
 
   function confirmLeave() {
+    // Check if user is the owner
+    if (isOwner) {
+      Alert.alert(
+        "Cannot Leave",
+        "As the owner, you cannot leave the household. You can either delete the household or transfer ownership to another member first.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
     Alert.alert("Leave household", "You will lose access to all shared entries.", [
       { text: "Cancel", style: "cancel" },
-      { text: "Leave", style: "destructive", onPress: async () => { try { await onLeave(); } catch (e) { flash(false, e.message); } } },
+      { text: "Leave", style: "destructive", onPress: async () => {
+        try {
+          await onLeave();
+        } catch (e) {
+          // Handle owner error from backend as well
+          if (e.message?.includes("Owner cannot leave")) {
+            Alert.alert(
+              "Cannot Leave",
+              "As the owner, you cannot leave the household. You can either delete the household or transfer ownership to another member first.",
+              [{ text: "OK" }]
+            );
+          } else {
+            flash(false, e.message);
+          }
+        }
+      }},
     ]);
   }
 
@@ -127,15 +159,16 @@ export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemo
             )}
           </View>
 
-          {/* Members */}
-          <View style={S.rowBetween}>
-            <Text style={S.sectionTitle}>Members</Text>
-            {isOwner && (
-              <TouchableOpacity onPress={() => setView(view === "add" ? "main" : "add")} style={localStyles.smallBtn}>
-                <Text style={{ fontSize: 12, color: C.text, fontWeight: "500" }}>{view === "add" ? "Cancel" : "+ Add member"}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          {/* Add Member Button (prominent) */}
+          {isOwner && view !== "add" && view !== "rename" && (
+            <TouchableOpacity
+              style={[S.card, { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16, backgroundColor: C.greenLight, borderColor: C.greenBorder }]}
+              onPress={() => setView("add")}
+            >
+              <Text style={{ fontSize: 18 }}>👥</Text>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: C.greenDark }}>Add Member to Household</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Add member form */}
           {view === "add" && isOwner && (
@@ -143,9 +176,14 @@ export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemo
               <Text style={[S.label, { marginBottom: 6 }]}>Member's email</Text>
               <TextInput style={S.input} placeholder="their@email.com" placeholderTextColor={C.textTertiary} value={emailInput} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoFocus />
               <Text style={[S.small, { marginBottom: 10 }]}>The person must already have a Budget account.</Text>
-              <TouchableOpacity style={[S.btnPrimary, { backgroundColor: C.green }]} onPress={handleAddMember} disabled={busy}>
-                {busy ? <ActivityIndicator color="#fff" /> : <Text style={S.btnPrimaryText}>Add to household</Text>}
-              </TouchableOpacity>
+              <View style={[S.row, { gap: 8 }]}>
+                <TouchableOpacity style={[S.btnPrimary, { flex: 1, backgroundColor: C.green }]} onPress={handleAddMember} disabled={busy}>
+                  {busy ? <ActivityIndicator color="#fff" /> : <Text style={S.btnPrimaryText}>Add</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity style={[S.btnPrimary, { flex: 1, backgroundColor: "transparent", borderWidth: 0.5, borderColor: C.border }]} onPress={() => { setView("main"); setEmail(""); }}>
+                  <Text style={{ fontSize: 15, color: C.text }}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
 
@@ -153,7 +191,7 @@ export function HouseholdScreen({ household, user, onCreate, onAddMember, onRemo
           <View style={{ borderRadius: 14, borderWidth: 0.5, borderColor: C.border, overflow: "hidden", marginBottom: 24 }}>
             {(household.members || []).map((m, i) => {
               const isMe   = m.userId === user?.userId;
-              const mOwner = m.userId === household.ownerUserId;
+              const mOwner = m.userId === household.ownerId;
               return (
                 <View key={m.userId}>
                   {i > 0 && <View style={S.divider} />}

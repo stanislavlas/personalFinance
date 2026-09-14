@@ -47,6 +47,14 @@ export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMon
     });
   }, [allEntries, selectedYear]);
 
+  // Year totals for year overview
+  const yearTotals = useMemo(() => {
+    const yearEntries = allEntries.filter(e => e.date?.startsWith(`${selectedYear}-`));
+    const income  = yearEntries.filter(e => e.type === "income").reduce((s,e)  => s + e.amount, 0);
+    const expense = yearEntries.filter(e => e.type === "expense").reduce((s,e) => s + e.amount, 0);
+    return { income, expense, balance: income - expense };
+  }, [allEntries, selectedYear]);
+
   const maxBar      = Math.max(...monthlyData.map(d => Math.max(d.inc, d.exp)), 1);
   const activeMonth = parseInt(filterMonth.slice(5)) - 1;
   const balColor    = totals.balance >= 0 ? C.green : C.red;
@@ -84,9 +92,9 @@ export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMon
   return (
     <ScrollView style={S.scroll} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
 
-      {/* Selected period header */}
+      {/* ===== MONTH OVERVIEW ===== */}
       <View style={{ paddingTop: 20, paddingBottom: 10, alignItems: "center" }}>
-        <Text style={{ fontSize: 13, color: C.textTertiary, marginBottom: 6 }}>Selected Period</Text>
+        <Text style={{ fontSize: 15, color: C.textTertiary, marginBottom: 6, fontWeight: "600" }}>MONTH OVERVIEW</Text>
         <Text style={{ fontSize: 20, fontWeight: "700", color: C.text }}>{selectedMonthLabel}</Text>
       </View>
 
@@ -225,9 +233,28 @@ export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMon
       {/* Monthly chart */}
       <View style={{ marginBottom: 20 }}>
         {/* Year header */}
-        <View style={{ alignItems: "center", marginBottom: 12 }}>
-          <Text style={S.sectionTitle}>Year Overview</Text>
-          <Text style={{ fontSize: 18, fontWeight: "700", color: C.text, marginTop: 4 }}>{selectedYear}</Text>
+        <View style={{ alignItems: "center", marginBottom: 12, marginTop: 36, paddingTop: 24, borderTopWidth: 1, borderTopColor: C.border }}>
+          <Text style={{ fontSize: 15, color: C.textTertiary, marginBottom: 6, fontWeight: "600" }}>YEAR OVERVIEW</Text>
+          <Text style={{ fontSize: 22, fontWeight: "700", color: C.text, marginTop: 4 }}>{selectedYear}</Text>
+        </View>
+
+        {/* Year totals */}
+        <View style={{ alignItems: "center", paddingVertical: 20 }}>
+          <Text style={[S.label, { marginBottom: 6 }]}>Annual Balance</Text>
+          <Text style={[S.h1, { fontSize: 38, color: yearTotals.balance >= 0 ? C.green : C.red, fontFamily: "Courier" }]}>{fmt(yearTotals.balance)}</Text>
+        </View>
+
+        {/* Year Income / Expense pills */}
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 20 }}>
+          {[
+            { label: "Income",   val: yearTotals.income,  bg: C.greenLight, color: C.greenDark },
+            { label: "Expenses", val: yearTotals.expense, bg: C.redLight,   color: C.redDark  },
+          ].map(({ label, val, bg, color }) => (
+            <View key={label} style={{ flex: 1, backgroundColor: bg, borderRadius: 14, padding: 14 }}>
+              <Text style={{ fontSize: 11, color, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>{label}</Text>
+              <Text style={{ fontSize: 18, fontWeight: "700", color, fontFamily: "Courier" }}>{fmt(val)}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Year horizontal scroller */}
@@ -235,7 +262,7 @@ export function DashboardScreen({ entries, allEntries, filterMonth, setFilterMon
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 4, marginBottom: 12 }}
+            contentContainerStyle={{ paddingHorizontal: 4, marginBottom: 16 }}
           >
             {availableYears.map(year => (
               <TouchableOpacity
