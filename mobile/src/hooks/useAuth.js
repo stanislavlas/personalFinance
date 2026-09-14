@@ -1,54 +1,193 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  getStoredUser, getAccessToken, clearTokens,
+  getStoredUser, getAccessToken,
   login as apiLogin, register as apiRegister,
   logout as apiLogout, deleteAccount as apiDeleteAccount,
   changePassword as apiChangePassword,
+  loginWithBiometric as apiLoginWithBiometric,
+  storeBiometricCredentials,
+  updateProfile as apiUpdateProfile,
 } from "../services/auth.js";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { clearEntriesCache } from "./useEntries.js";
+import { clearHouseholdCache } from "./useHousehold.js";
+import { isBiometricSupported, hasBiometricEnrolled, isBiometricEnabled, enableBiometric, authenticateWithBiometric } from "../services/biometric.js";
 
 export function useAuth() {
   const [user, setUser]       = useState(null);
   const [ready, setReady]     = useState(false); // true once AsyncStorage is checked
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
+  // Set after a successful login when device supports biometrics but enroll hasn't happened yet
+  const [pendingBiometricEnroll, setPendingBiometricEnroll] = useState(null); // { email, password } | null
+  const biometricTriggeredRef = useRef(false); // prevent double-trigger
+
+  // Attempt biometric login automatically — called on app start and after logout
+  const triggerBiometricLogin = useCallback(async () => {
+    if (biometricTriggeredRef.current) return;
+    try {
+      const canUse = await isBiometricEnabled();
+      if (!canUse) return;
+      const supported = await isBiometricSupported();
+      const enrolled  = await hasBiometricEnrolled();
+      if (!supported || !enrolled) return;
+
+      biometricTriggeredRef.current = true;
+      setLoading(true); setError(null);
+      try {
+        const authenticated = await authenticateWithBiometric();
+        if (authenticated) {
+          const u = await apiLoginWithBiometric();
+          setUser(u);
+        }
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    } catch {
+      // Non-critical — ignore
+    }
+  }, []);
 
   // Rehydrate session from AsyncStorage on mount
   useEffect(() => {
     (async () => {
       const [storedUser, token] = await Promise.all([getStoredUser(), getAccessToken()]);
-      if (storedUser && token) setUser(storedUser);
-      setReady(true);
+      if (storedUser && token) {
+        setUser(storedUser);
+        setReady(true);
+      } else {
+        setReady(true);
+        await triggerBiometricLogin();
+      }
     })();
   }, []);
+
+  // Re-trigger biometric auto-login whenever the user is signed out (logout or session expiry)
+  // but only after the initial rehydration is done (ready = true).
+  const prevUserRef = useRef(null);
+  useEffect(() => {
+    if (!ready) return;
+    const wasAuthenticated = prevUserRef.current !== null;
+    prevUserRef.current = user;
+    if (wasAuthenticated && user === null) {
+      // User just signed out — offer biometric re-login
+      triggerBiometricLogin();
+    }
+  }, [user, ready, triggerBiometricLogin]);
 
   const isAuthenticated = !!(user);
   const clearError = () => setError(null);
 
+  // After a successful password login, store credentials for biometric use.
+  // - If biometrics are already enabled: silently refresh the stored credentials
+  //   (handles the case where they were cleared by a previous bug).
+  // - If biometrics are supported but not yet enabled: set pendingBiometricEnroll
+  //   so the UI can prompt the user to opt in.
+  async function handlePostLoginBiometric(email, password) {
+    try {
+      const [supported, enrolled, alreadyEnabled] = await Promise.all([
+        isBiometricSupported(),
+        hasBiometricEnrolled(),
+        isBiometricEnabled(),
+      ]);
+      if (!supported || !enrolled) return;
+
+      if (alreadyEnabled) {
+        // Silently keep credentials fresh — no prompt needed
+        await storeBiometricCredentials(email, password);
+      } else {
+        // Device supports biometrics but user hasn't opted in yet — prompt them
+        setPendingBiometricEnroll({ email, password });
+      }
+    } catch {
+      // Non-critical — ignore
+    }
+  }
+
+  // Clear cached data when a different user logs in (e.g. new account on same device).
+  // Clears if there is no stored user (previous session was logged out and KEY_USER
+  // was removed) or if the stored user ID differs from the incoming one.
+  // Biometric re-login for the same user (matching userId) skips the clear.
+  async function clearCacheIfUserChanged(incomingUser) {
+    try {
+      const previous = await getStoredUser();
+      const userChanged = !previous || previous.userId !== incomingUser.userId;
+      if (userChanged) {
+        await clearEntriesCache();
+        await clearHouseholdCache();
+      }
+    } catch {
+      // Non-critical — ignore
+    }
+  }
+
   const login = useCallback(async (credentials) => {
     setLoading(true); setError(null);
-    try { const u = await apiLogin(credentials); setUser(u); return u; }
-    catch (e) { setError(e.message); throw e; }
-    finally { setLoading(false); }
+    try {
+      const u = await apiLogin(credentials);
+      await clearCacheIfUserChanged(u);
+      await handlePostLoginBiometric(credentials.email, credentials.password);
+      setUser(u);
+      return u;
+    } catch (e) {
+      setError(e.message);
+      throw e;
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const register = useCallback(async (data) => {
     setLoading(true); setError(null);
-    try { const u = await apiRegister(data); setUser(u); return u; }
-    catch (e) { setError(e.message); throw e; }
-    finally { setLoading(false); }
+    try {
+      const u = await apiRegister(data);
+      await clearCacheIfUserChanged(u);
+      await handlePostLoginBiometric(data.email, data.password);
+      setUser(u);
+      return u;
+    } catch (e) {
+      setError(e.message);
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loginWithBiometric = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const authenticated = await authenticateWithBiometric();
+      if (!authenticated) { setError("Biometric authentication failed"); return; }
+      const u = await apiLoginWithBiometric();
+      await clearCacheIfUserChanged(u);
+      setUser(u);
+      return u;
+    } catch (e) {
+      setError(e.message);
+      throw e;
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const logout = useCallback(async () => {
-    setLoading(true);
-    try { await apiLogout(); } catch {}
-    await clearTokens();
+    // Clear local state and caches immediately — backend call happens in background
     setUser(null);
-    setLoading(false);
+    biometricTriggeredRef.current = false;
+    await clearEntriesCache();
+    await clearHouseholdCache();
+    apiLogout().catch(() => {}); // fire and forget
   }, []);
 
   const deleteAccount = useCallback(async (password) => {
     setLoading(true); setError(null);
-    try { await apiDeleteAccount(password); setUser(null); }
+    try {
+      await apiDeleteAccount(password);
+      await clearEntriesCache();
+      setUser(null);
+    }
     catch (e) { setError(e.message); throw e; }
     finally { setLoading(false); }
   }, []);
@@ -60,10 +199,44 @@ export function useAuth() {
     finally { setLoading(false); }
   }, []);
 
+  const updateProfile = useCallback(async (patch) => {
+    setLoading(true); setError(null);
+    try {
+      const updated = await apiUpdateProfile(patch);
+      setUser(updated);
+      return updated;
+    } catch (e) {
+      setError(e.message);
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Confirm biometric enrollment from the UI prompt
+  const confirmBiometricEnroll = useCallback(async () => {
+    if (!pendingBiometricEnroll) return;
+    try {
+      await enableBiometric(pendingBiometricEnroll.email);
+      await storeBiometricCredentials(pendingBiometricEnroll.email, pendingBiometricEnroll.password);
+    } finally {
+      setPendingBiometricEnroll(null);
+    }
+  }, [pendingBiometricEnroll]);
+
+  const dismissBiometricEnroll = useCallback(() => {
+    setPendingBiometricEnroll(null);
+  }, []);
+
   // Called by authRequest when a 401 slips through
   const handleSessionExpired = useCallback(() => {
     setUser(null);
   }, []);
 
-  return { user, isAuthenticated, ready, loading, error, clearError, login, register, logout, deleteAccount, changePassword, handleSessionExpired };
+  return {
+    user, isAuthenticated, ready, loading, error, clearError,
+    login, register, logout, deleteAccount, changePassword, updateProfile,
+    handleSessionExpired, loginWithBiometric,
+    pendingBiometricEnroll, confirmBiometricEnroll, dismissBiometricEnroll,
+  };
 }
