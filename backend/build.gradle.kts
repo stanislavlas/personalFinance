@@ -34,6 +34,7 @@ dependencies {
 	implementation("aws.sdk.kotlin:dynamodb:1.2.28")
 	implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
 	implementation("com.squareup.okhttp3:okhttp-coroutines:5.0.0-alpha.14")
+	implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
