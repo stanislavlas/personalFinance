@@ -341,6 +341,7 @@ function AppContent() {
                 showPersonalOnly={showPersonalOnly}
                 pendingSync={pendingSync}
                 setTabScrollEnabled={setTabScrollEnabled}
+                userCurrency={user?.currency}
                 {...catProps}
               />
             )}

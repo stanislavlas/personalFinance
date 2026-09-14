@@ -2,14 +2,14 @@ import { useState, useMemo } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { fmt } from "../../src/utils/theme.js";
 import { useTheme } from "../../src/contexts/ThemeContext.js";
-import { toApiNecessity } from "../../src/utils/enums.js";
+import { toApiNecessity, formatCurrency } from "../../src/utils/enums.js";
 
 const NECESSITY_STYLE = {
   necessary: { bg: "#E6F1FB", color: "#185FA5", label: "🔒 Necessary" },
   optional:  { bg: "#FAEEDA", color: "#854F0B", label: "✂️ Optional"  },
 };
 
-export function HistoryScreen({ entries, onDelete, onUpdate, household, incomeCategories, allCategories, colorMap, getCategoryById }) {
+export function HistoryScreen({ entries, onDelete, onUpdate, household, incomeCategories, allCategories, colorMap, getCategoryById, pendingSync }) {
   const { colors: C, styles: S } = useTheme();
   const [expandedId, setExpandedId] = useState(null);
   const [search, setSearch]         = useState("");
@@ -152,6 +152,12 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, incomeCa
                         </Text>
                       </View>
                     )}
+                    {/* Pending sync badge */}
+                    {pendingSync?.has(entry.entryId) && (
+                      <View style={{ paddingHorizontal: 5, paddingVertical: 2, borderRadius: 5, backgroundColor: "#FFF3CD", borderWidth: 0.5, borderColor: "#FAC775" }}>
+                        <Text style={{ fontSize: 9, color: "#854F0B", fontWeight: "600" }}>PENDING</Text>
+                      </View>
+                    )}
                   </View>
                   <Text style={S.small}>
                     {cat.label} · {entry.date?.slice(5).replace("-","/")}
@@ -159,7 +165,7 @@ export function HistoryScreen({ entries, onDelete, onUpdate, household, incomeCa
                   </Text>
                 </View>
                 <Text style={[localStyles.amount, { color: entry.type === "income" ? C.green : C.red }]}>
-                  {entry.type === "income" ? "+" : "−"}{fmt(entry.amount)}
+                  {entry.type === "income" ? "+" : "−"}{formatCurrency(entry.amount, entry.currency)}
                 </Text>
               </TouchableOpacity>
 

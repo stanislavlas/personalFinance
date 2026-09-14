@@ -62,3 +62,23 @@ export const MemberRole = {
   OWNER: "OWNER",
   MEMBER: "MEMBER",
 };
+
+const CURRENCY_SYMBOLS = {
+  AUD: "A$",  BRL: "R$",  CAD: "C$",  CHF: "CHF", CNY: "¥",   CZK: "Kč",
+  DKK: "kr",  EUR: "€",   GBP: "£",   HKD: "HK$", HUF: "Ft",  IDR: "Rp",
+  ILS: "₪",   INR: "₹",   ISK: "kr",  JPY: "¥",   KRW: "₩",   MXN: "MX$",
+  MYR: "RM",  NOK: "kr",  NZD: "NZ$", PHP: "₱",   PLN: "zł",  RON: "lei",
+  SEK: "kr",  SGD: "S$",  THB: "฿",   TRY: "₺",   USD: "$",   ZAR: "R",
+};
+
+// Currencies where symbol follows the number
+const SUFFIX_CURRENCIES = new Set(["CZK", "HUF", "PLN", "RON", "SEK", "NOK", "DKK", "ISK"]);
+
+export function formatCurrency(value, currency) {
+  const symbol    = CURRENCY_SYMBOLS[currency] || currency || "";
+  const num       = typeof value === "number" ? value : parseFloat(value) || 0;
+  const formatted = num.toFixed(2);
+  return SUFFIX_CURRENCIES.has(currency)
+    ? `${formatted} ${symbol}`
+    : `${symbol}${formatted}`;
+}
