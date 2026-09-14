@@ -3,6 +3,7 @@ package personalFinance.auth
 import kotlinx.coroutines.runBlocking
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import personalFinance.currency.CurrencyConversionService
 import personalFinance.dataStore.IDataStoreClient
 import personalFinance.models.Currency
 import personalFinance.models.api.AuthUserResponse
@@ -15,6 +16,7 @@ class AuthService(
     private val dataStore: IDataStoreClient,
     private val passwordEncoder: PasswordEncoder,
     private val refreshTokenService: RefreshTokenService,
+    private val currencyConversionService: CurrencyConversionService,
 ) {
     fun getUserWithJwt(email: String, password: String): AuthUserResponse {
         val user = runBlocking { dataStore.getUserByEmail(email = email) }
@@ -46,6 +48,10 @@ class AuthService(
         name: String,
         password: String,
     ): AuthUserResponse {
+        if (!currencyConversionService.isValidCurrency(currency)) {
+            throw IllegalArgumentException("Unknown currency code: $currency")
+        }
+
         val user = runBlocking { dataStore.getUserByEmail(email = email) }
 
         if (user != null) {

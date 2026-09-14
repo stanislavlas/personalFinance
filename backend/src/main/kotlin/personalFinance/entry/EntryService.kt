@@ -1,6 +1,7 @@
 package personalFinance.entry
 
 import org.springframework.stereotype.Service
+import personalFinance.currency.CurrencyConversionService
 import personalFinance.dataStore.EntryRepository
 import personalFinance.dataStore.HouseholdRepository
 import personalFinance.dataStore.IDataStoreClient
@@ -15,7 +16,8 @@ import java.util.*
 class EntryService(
     private val entryRepository: EntryRepository,
     private val householdRepository: HouseholdRepository,
-    private val dataStoreClient: IDataStoreClient
+    private val dataStoreClient: IDataStoreClient,
+    private val currencyConversionService: CurrencyConversionService,
 ) {
     suspend fun getEntries(
         userId: UUID,
@@ -55,6 +57,10 @@ class EntryService(
                 }
             }
 
+            if (!currencyConversionService.isValidCurrency(req.amount.currency)) {
+                throw IllegalArgumentException("Unknown currency code: ${req.amount.currency}")
+            }
+
             Entry(
                 entryId = UUID.randomUUID(),
                 userId = userId,
@@ -86,6 +92,10 @@ class EntryService(
         necessity: Necessity
     ): Entry {
         val user = dataStoreClient.getUserById(userId)
+
+        if (!currencyConversionService.isValidCurrency(amount.currency)) {
+            throw IllegalArgumentException("Unknown currency code: ${amount.currency}")
+        }
 
         // If householdId provided, verify user is member
         if (householdId != null) {
