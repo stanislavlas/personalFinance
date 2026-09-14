@@ -1,84 +1,144 @@
 import { useState, useEffect, useCallback } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getMyHousehold, createHousehold as apiCreate, addMember as apiAdd, removeMember as apiRemove, leaveHousehold as apiLeave, deleteHousehold as apiDelete, renameHousehold as apiRename } from "../services/household.js";
+import syncService from "../services/syncService.js";
+
+const CACHE_KEY = "budget_cache_household";
+
+async function loadCache()    { try { return JSON.parse(await AsyncStorage.getItem(CACHE_KEY) || "null"); } catch { return null; } }
+async function saveCache(h)   { try { if (h) await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(h)); else await AsyncStorage.removeItem(CACHE_KEY); } catch {} }
+
+export async function clearHouseholdCache() {
+  try { await AsyncStorage.removeItem(CACHE_KEY); } catch {}
+}
 
 export function useHousehold(isAuthenticated) {
-  const [household, setHousehold] = useState(null);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState(null);
+  const [household,   setHousehold]   = useState(null);
+  const [loading,     setLoading]     = useState(true);
+  const [pendingSync, setPendingSync] = useState(false);
 
+  // ── Read: cache + network in parallel ─────────────────────────────────────
   const fetch = useCallback(async () => {
-    if (!isAuthenticated) { setLoading(false); return; }
-    setLoading(true); setError(null);
-    try { setHousehold(await getMyHousehold()); }
-    catch (e) { setError(e.message); }
-    finally { setLoading(false); }
+    if (!isAuthenticated) {
+      setHousehold(null);
+      setLoading(false);
+      return;
+    }
+
+    const cachePromise   = loadCache();
+    const networkPromise = getMyHousehold().catch(err => {
+      if (err.code === "AUTH_EXPIRED") throw err;
+      return null; // keep cache on network error
+    });
+
+    const cached = await cachePromise;
+    if (cached) setHousehold(cached);
+    setLoading(false);
+
+    const data = await networkPromise;
+    if (data !== null) { // null = network error; undefined = no household
+      setHousehold(data);
+      saveCache(data);
+    }
   }, [isAuthenticated]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  const createHousehold  = useCallback(async (name)   => {
+  useEffect(() => {
+    const handleSyncComplete = ({ syncedOperations = [] }) => {
+      if (syncedOperations.some(op => op.type?.startsWith('household.'))) {
+        setPendingSync(false);
+        fetch();
+      }
+    };
+    syncService.addEventListener('syncComplete', handleSyncComplete);
+    return () => syncService.removeEventListener('syncComplete', handleSyncComplete);
+  }, [fetch]);
+
+  // ── Writes: optimistic update + enqueue + background sync ─────────────────
+  const createHousehold = useCallback(async (name, currency) => {
+    const optimistic = { name, currency, members: [], pendingSync: true };
+    setHousehold(optimistic); saveCache(optimistic); setPendingSync(true);
     try {
-      const d = await apiCreate(name);
-      setHousehold(d);
-      return d;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
+      const { default: svc } = await import("../services/syncService.js");
+      const { getStoredUser } = await import("../services/auth.js");
+      const user = await getStoredUser();
+      await svc.enqueue("household.create", { name, currency }, user?.userId);
+      svc.syncAll().catch(() => {});
+    } catch {}
   }, []);
 
-  const addMember        = useCallback(async (email)  => {
+  const addMember = useCallback(async (email) => {
+    if (!household?.householdId) throw new Error("No household found");
+    setPendingSync(true);
     try {
-      const d = await apiAdd(email);
-      setHousehold(d);
-      return d;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
+      const { default: svc } = await import("../services/syncService.js");
+      const { getStoredUser } = await import("../services/auth.js");
+      const user = await getStoredUser();
+      await svc.enqueue("household.addMember", { householdId: household.householdId, email }, user?.userId);
+      svc.syncAll().catch(() => {});
+    } catch {}
+  }, [household]);
 
-  const removeMember     = useCallback(async (userId) => {
+  const removeMember = useCallback(async (userId) => {
+    if (!household?.householdId) throw new Error("No household found");
+    setHousehold(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, members: prev.members?.filter(m => m.userId !== userId) || [], pendingSync: true };
+      saveCache(updated); return updated;
+    });
+    setPendingSync(true);
     try {
-      const d = await apiRemove(userId);
-      setHousehold(d);
-      return d;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
+      const { default: svc } = await import("../services/syncService.js");
+      const { getStoredUser } = await import("../services/auth.js");
+      const user = await getStoredUser();
+      await svc.enqueue("household.removeMember", { householdId: household.householdId, userId }, user?.userId);
+      svc.syncAll().catch(() => {});
+    } catch {}
+  }, [household]);
 
-  const leaveHousehold   = useCallback(async ()       => {
+  const leaveHousehold = useCallback(async () => {
+    if (!household?.householdId) throw new Error("No household found");
+    const hid = household.householdId;
+    setHousehold(null); saveCache(null); setPendingSync(true);
     try {
-      await apiLeave();
-      setHousehold(null);
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
+      const { default: svc } = await import("../services/syncService.js");
+      const { getStoredUser } = await import("../services/auth.js");
+      const user = await getStoredUser();
+      await svc.enqueue("household.leave", { householdId: hid }, user?.userId);
+      svc.syncAll().catch(() => {});
+    } catch {}
+  }, [household]);
 
-  const deleteHousehold  = useCallback(async ()       => {
+  const deleteHousehold = useCallback(async () => {
+    if (!household?.householdId) throw new Error("No household found");
+    const hid = household.householdId;
+    setHousehold(null); saveCache(null); setPendingSync(true);
     try {
-      await apiDelete();
-      setHousehold(null);
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
+      const { default: svc } = await import("../services/syncService.js");
+      const { getStoredUser } = await import("../services/auth.js");
+      const user = await getStoredUser();
+      await svc.enqueue("household.delete", { householdId: hid }, user?.userId);
+      svc.syncAll().catch(() => {});
+    } catch {}
+  }, [household]);
 
-  const renameHousehold  = useCallback(async (name)   => {
+  const renameHousehold = useCallback(async (name) => {
+    if (!household?.householdId) throw new Error("No household found");
+    setHousehold(prev => {
+      if (!prev) return prev;
+      const updated = { ...prev, name, pendingSync: true };
+      saveCache(updated); return updated;
+    });
+    setPendingSync(true);
     try {
-      const d = await apiRename(name);
-      setHousehold(d);
-      return d;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    }
-  }, []);
+      const { default: svc } = await import("../services/syncService.js");
+      const { getStoredUser } = await import("../services/auth.js");
+      const user = await getStoredUser();
+      await svc.enqueue("household.rename", { householdId: household.householdId, name }, user?.userId);
+      svc.syncAll().catch(() => {});
+    } catch {}
+  }, [household]);
 
-  return { household, loading, error, refresh: fetch, createHousehold, addMember, removeMember, leaveHousehold, deleteHousehold, renameHousehold };
+  return { household, loading, error: null, refresh: fetch, createHousehold, addMember, removeMember, leaveHousehold, deleteHousehold, renameHousehold, pendingSync };
 }

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Budget",
-    "slug": "budget-app",
+    "slug": "budget",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,11 +24,13 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "your-eas-project-id"
+        "projectId": "413353e1-2fd3-4a86-b7dd-2a24df85d419"
       }
     },
     "plugins": [
-      "expo-asset"
-    ]
+      "expo-asset",
+      "expo-secure-store"
+    ],
+    "owner": "slas"
   }
 }

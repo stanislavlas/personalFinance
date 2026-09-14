@@ -133,7 +133,7 @@ mobile/
     │
     ├── services/
     │   ├── auth.js           # JWT auth + token refresh
-    │   ├── dynamodb.js       # Entry CRUD
+    │   ├── entries.js        # Entry CRUD
     │   ├── household.js      # Household operations
     │   └── customCategories.js # Category CRUD
     │
