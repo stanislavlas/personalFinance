@@ -22,4 +22,24 @@ class UserController(
 
         return user.toApi()
     }
+
+    @PatchMapping("")
+    fun updateUser(
+        @RequestHeader("Authorization") authHeader: String,
+        @RequestBody request: UpdateUserRequest,
+    ): User {
+        val jwt    = authHeader.getJWT()
+        val userId = jwtAuth.getUserIdFromJWT(jwt)
+        val updated = userService.updateUser(
+            userId   = userId,
+            name     = request.name,
+            currency = request.currency,
+        )
+        return updated.toApi()
+    }
 }
+
+data class UpdateUserRequest(
+    val name: String?,
+    val currency: String?,
+)

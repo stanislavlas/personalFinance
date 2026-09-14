@@ -8,4 +8,5 @@ interface IDataStoreClient {
     suspend fun getUserByEmail(email: String): User?
     suspend fun getUserById(userId: UUID): User
     suspend fun deleteUser(userId: UUID)
+    suspend fun updateUser(userId: UUID, name: String?, currency: String?): User
 }

@@ -76,4 +76,14 @@ class DynamoClient(
 
         dynamoClient.deleteItem(request)
     }
+
+    override suspend fun updateUser(userId: UUID, name: String?, currency: String?): personalFinance.models.internal.User {
+        val existing = getUserById(userId)
+        val updated = existing.copy(
+            name     = name     ?: existing.name,
+            currency = currency ?: existing.currency,
+        )
+        putUser(updated)
+        return updated
+    }
 }
